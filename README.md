@@ -1,10 +1,13 @@
+
+![img](Images/qeicon.png)
 # QuickEditer
 
 基于 Arduino 的 Web IDE，面向嵌入式开发场景，提供从项目创建、代码编辑到编译烧录的完整工作流。支持多项目与文件树管理、C/C++ 语法高亮与常用函数补全、一键编译并实时查看日志；编译产物自动识别，ESP32/ESP8266 可合并为单一固件；通过浏览器 Web Serial 直接烧录，无需安装本地工具。内置开发板与库管理、串口监视器、示例浏览、全局搜索与主题切换，适配 Windows 与 Linux 服务器部署，数据集中存放，便于备份与迁移。
 
-
 **注意将项目中的文件夹`Arduinolib`复制到生成目录！！**
 
+
+![img](Images/1.png)
 ## 功能
 
 ### 项目管理
@@ -162,3 +165,20 @@ Blazor Server 依赖 WebSocket，网络波动或服务重启会断开，页面�
 
 ### 支持
 本软件完全免费，无任何功能限制。如果对你有帮助，欢迎在应用内「捐赠」菜单扫码支持作者。
+
+
+## 其他截图
+新建项目
+![img](Images/8.png)
+基于WebSerial串口链接
+![img](Images/2.png)
+基于Web的固件烧录（目前只支持 ESP32/ESP8266项目）
+![img](Images/3.png)
+开发板管理
+![img](Images/4.png)
+库管理
+![img](Images/5.png)
+串口监视-文本模式
+![img](Images/6.png)
+串口监视-图形模式
+![img](Images/7.png)
