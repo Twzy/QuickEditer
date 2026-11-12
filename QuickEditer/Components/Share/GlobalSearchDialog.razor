@@ -1,0 +1,106 @@
+﻿@* 文件路径：Components/Share/GlobalSearchDialog.razor *@
+@using QuickEditer.Services
+@inject FileTreeService FileSvc
+
+<div class="global-search-panel">
+    <div class="global-search-bar">
+        <input class="qe-input qe-input-sm" placeholder="搜索关键字" @bind="_keyword" @bind:event="oninput" @bind:after="SearchAsync" />
+        <button class="qe-btn qe-btn-sm qe-btn-outline-accent" @onclick="SearchAsync">
+            <i class="qe-ico qe-ico-search"></i> 搜索
+        </button>
+    </div>
+
+    @if (_searching)
+    {
+        <div class="global-search-empty">搜索中...</div>
+    }
+    else if (_results.Count == 0)
+    {
+        <div class="global-search-empty">
+            @(string.IsNullOrWhiteSpace(_keyword) ? "输入关键字开始搜索" : "没有匹配结果")
+        </div>
+    }
+    else
+    {
+        <div class="global-search-results">
+            @foreach (var group in _results.GroupBy(r => r.FilePath))
+            {
+                <div class="global-search-group">
+                    <div class="global-search-file">@Path.GetFileName(group.Key)</div>
+                    @foreach (var r in group.Take(50))
+                    {
+                        <div class="global-search-item" @onclick="() => OnResultSelected.InvokeAsync(r)">
+                            <span class="global-search-line">@r.Line</span>
+                            <span class="global-search-text">@r.Text</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private string _keyword = "";
+    private bool _searching;
+    private List<SearchResult> _results = new();
+
+    [Parameter] public string ProjectRoot { get; set; } = "";
+    [Parameter] public EventCallback<SearchResult> OnResultSelected { get; set; }
+
+    public class SearchResult
+    {
+        public string FilePath { get; set; } = "";
+        public int Line { get; set; }
+        public string Text { get; set; } = "";
+    }
+
+    private async Task SearchAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_keyword) || string.IsNullOrWhiteSpace(ProjectRoot))
+        {
+            _results.Clear();
+            return;
+        }
+
+        _searching = true;
+        _results.Clear();
+
+        await Task.Run(() =>
+        {
+            if (!Directory.Exists(ProjectRoot)) return;
+
+            foreach (var file in Directory.GetFiles(ProjectRoot, "*.*", SearchOption.AllDirectories))
+            {
+                var ext = Path.GetExtension(file).ToLowerInvariant();
+                if (ext is not (".ino" or ".cpp" or ".c" or ".h" or ".hpp" or ".txt" or ".md" or ".json" or ".xml" or ".yaml" or ".yml" or ".css" or ".js" or ".cs"))
+                    continue;
+
+                if (file.Contains(Path.DirectorySeparatorChar + "build" + Path.DirectorySeparatorChar) ||
+                    file.Contains(Path.DirectorySeparatorChar + "logs" + Path.DirectorySeparatorChar))
+                    continue;
+
+                try
+                {
+                    var lines = File.ReadAllLines(file);
+                    for (int i = 0; i < lines.Length; i++)
+                    {
+                        if (lines[i].Contains(_keyword, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _results.Add(new SearchResult
+                            {
+                                FilePath = file,
+                                Line = i + 1,
+                                Text = lines[i].Trim()
+                            });
+                            if (_results.Count >= 500) return;
+                        }
+                    }
+                }
+                catch { }
+            }
+        });
+
+        _searching = false;
+    }
+}

@@ -1,0 +1,142 @@
+﻿@* 文件路径：Components/Share/OutputPanel.razor *@
+
+@using QuickEditer.Models
+@implements IDisposable
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<div class="output-body" @ref="_bodyRef"
+     @oncontextmenu="OpenContextMenu"
+     @oncontextmenu:preventDefault="true">
+    @foreach (var log in Logs)
+    {
+        <div class="output-line level-@log.Level.ToString().ToLowerInvariant()">
+            <span class="output-time">@log.DisplayTime</span>
+            <span class="output-level">@log.LevelLabel</span>
+            <span class="output-text">@log.Text</span>
+        </div>
+
+        @if (log.Artifacts != null && log.Artifacts.Count > 0)
+        {
+            <div class="output-artifacts">
+                @foreach (var f in SortArtifacts(log.Artifacts))
+                {
+                    var isMerged = IsMerged(f.FileName);
+                    <div class="output-artifact-item @(isMerged ? "merged" : "")">
+                        <i class="qe-ico qe-ico-firmware"></i>
+                        <span class="output-artifact-name">@f.FileName</span>
+                        @if (isMerged)
+                        {
+                            <span class="output-artifact-tag">合并固件</span>
+                        }
+                        <span class="output-artifact-size">@FormatSize(f.Size)</span>
+                        <a class="qe-icon-btn" href="@GetDownloadUrl(f)" download title="下载">
+                            <i class="qe-ico qe-ico-download"></i>
+                        </a>
+                        @if (isMerged)
+                        {
+                            <button class="qe-icon-btn" @onclick="() => OnFlashRequested.InvokeAsync()" title="在线烧录">
+                                <i class="qe-ico qe-ico-upload"></i>
+                            </button>
+                        }
+                    </div>
+                }
+                <div class="output-artifact-hint">
+                    下载后可用 Arduino IDE 或烧录工具写入开发板
+                </div>
+            </div>
+        }
+    }
+
+    @if (Logs.Count == 0)
+    {
+        <div class="output-empty">暂无输出</div>
+    }
+</div>
+@if (_menuVisible)
+{
+    <div class="context-menu" style="left:@(_menuX)px;top:@(_menuY)px">
+        <div class="output-context-item" @onclick="ClearLogs">
+            <i class="qe-ico qe-ico-delete"></i> 清空输出
+        </div>
+    </div>
+}
+@code {
+    [Parameter] public List<OutputLogEntry> Logs { get; set; } = new();
+    [Parameter] public EventCallback OnFlashRequested { get; set; }
+    [Parameter] public string? ProjectName { get; set; }
+
+    private ElementReference _bodyRef;
+    private int _lastCount;
+
+    private bool _menuVisible;
+    private double _menuX, _menuY;
+    private DotNetObjectReference<OutputPanel>? _selfRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Logs.Count == _lastCount) return;
+
+        _lastCount = Logs.Count;
+        try
+        {
+            await JS.InvokeVoidAsync("quickEditer.scrollOutputToBottom");
+        }
+        catch
+        {
+        }
+    }
+
+    private static List<BuildFile> SortArtifacts(List<BuildFile> files)
+    {
+        return files
+            .OrderByDescending(f => IsMerged(f.FileName))
+            .ThenBy(f => f.FileName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static bool IsMerged(string fileName) =>
+        !string.IsNullOrEmpty(fileName) &&
+        fileName.Contains("merged", StringComparison.OrdinalIgnoreCase);
+
+    private string GetDownloadUrl(BuildFile f) =>
+        $"/api/file/download?path={Uri.EscapeDataString(f.FullPath)}";
+
+    private static string FormatSize(long size) =>
+        size < 1024 ? $"{size} B"
+        : size < 1024 * 1024 ? $"{size / 1024.0:F1} KB"
+        : $"{size / 1024.0 / 1024.0:F2} MB";
+
+
+    private async Task OpenContextMenu(MouseEventArgs e)
+    {
+        _menuX = e.ClientX;
+        _menuY = e.ClientY;
+        _menuVisible = true;
+
+        _selfRef ??= DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("quickEditer.registerContextMenuClose", _selfRef);
+    }
+
+    [JSInvokable]
+    public async Task CloseContextMenu()
+    {
+        if (!_menuVisible) return;
+        _menuVisible = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ClearLogs()
+    {
+        _menuVisible = false;
+        await JS.InvokeVoidAsync("quickEditer.unregisterContextMenuClose");
+
+        Logs.Clear();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _selfRef?.Dispose();
+    }
+}

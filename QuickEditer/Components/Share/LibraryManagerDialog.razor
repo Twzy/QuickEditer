@@ -1,0 +1,535 @@
+﻿@* 文件路径：Components/Share/LibraryManagerDialog.razor *@
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using QuickEditer.Models
+@using QuickEditer.Services
+@inject ArduinoCliService CliSvc
+@inject DialogService Dialog
+@inject IJSRuntime JS
+
+<div class="qe-manager-panel">
+    <div class="qe-manager-toolbar">
+        <button class="qe-btn qe-btn-outline-accent" @onclick="SyncAsync" disabled="@_busy" title="下载库索引并刷新列表">
+            <i class="qe-ico qe-ico-refresh"></i> 同步索引
+        </button>
+        <input class="qe-input" 
+               placeholder="搜索库名称、作者或描述"
+               @bind="_filter" @bind:event="oninput" />
+    </div>
+
+    <div class="qe-manager-tabs">
+        <button class="@GetTabClass("installed")" @onclick="SwitchToInstalled">
+            <i class="qe-ico qe-ico-cright"></i>
+            已安装
+            <span class="qe-manager-tab-count">@FilteredInstalled.Count</span>
+        </button>
+        <button class="@GetTabClass("available")" @onclick="SwitchToAvailable">
+            <i class="qe-ico qe-ico-download"></i>
+            可安装
+            <span class="qe-manager-tab-count">@FilteredAvailable.Count</span>
+        </button>
+    </div>
+
+    <div class="qe-manager-list">
+        @if (_activeTab == "installed")
+        {
+            @if (FilteredInstalled.Count == 0)
+            {
+                <div class="qe-manager-empty">
+                    @(string.IsNullOrWhiteSpace(_filter) ? "暂无已安装库" : "没有匹配的已安装库")
+                </div>
+            }
+            else
+            {
+                <Virtualize Items="FilteredInstalled" Context="lib" ItemSize="140" OverscanCount="5">
+                    <ItemContent>
+                        <div class="qe-card qe-card-accent-success">
+                            <div class="qe-card-header">
+                                <div class="qe-card-title">
+                                    <span class="qe-card-name">@lib.Name</span>
+                                    @if (!string.IsNullOrEmpty(lib.Latest))
+                                    {
+                                        <span class="qe-badge qe-badge-warning mono">@lib.Latest</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(lib.Version))
+                                    {
+                                        <span class="qe-badge qe-badge-success mono">@lib.Version</span>
+                                    }
+                                </div>
+                                <div class="qe-card-actions">
+                                    <button class="qe-btn qe-btn-xs qe-btn-outline-accent"
+                                            @onclick="() => CheckUpdateAsync(lib)"
+                                            disabled="@_busy"
+                                            title="检查是否有新版本">
+                                        <i class="qe-ico qe-ico-refresh"></i> 检查更新
+                                    </button>
+                                    <button class="qe-btn qe-btn-xs qe-btn-outline-danger"
+                                            @onclick="() => UninstallLibraryAsync(lib)"
+                                            disabled="@_busy"
+                                            title="卸载该库">
+                                        <i class="qe-ico qe-ico-delete"></i> 卸载
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="qe-meta-grid">
+                                <div class="qe-meta-item">
+                                    <span class="qe-meta-label">作者</span>
+                                    <span class="qe-meta-value">@(string.IsNullOrEmpty(lib.Author) ? "—" : lib.Author)</span>
+                                </div>
+                                <div class="qe-meta-item">
+                                    <span class="qe-meta-label">维护者</span>
+                                    <span class="qe-meta-value">@(string.IsNullOrEmpty(lib.Maintainer) ? "—" : lib.Maintainer)</span>
+                                </div>
+                                <div class="qe-meta-item">
+                                    <span class="qe-meta-label">已安装版本</span>
+                                    <span class="qe-meta-value">@lib.Version</span>
+                                </div>
+                                <div class="qe-meta-item">
+                                    <span class="qe-meta-label">最新版本</span>
+                                    <span class="qe-meta-value">@(string.IsNullOrEmpty(lib.Latest) ? "—" : lib.Latest)</span>
+                                </div>
+                                <div class="qe-meta-item">
+                                    <span class="qe-meta-label">许可证</span>
+                                    <span class="qe-meta-value">@(string.IsNullOrEmpty(lib.License) ? "—" : lib.License)</span>
+                                </div>
+                                <div class="qe-meta-item">
+                                    <span class="qe-meta-label">官网</span>
+                                    @if (!string.IsNullOrEmpty(lib.Website))
+                                    {
+                                        <a class="qe-meta-link" href="@lib.Website" target="_blank" rel="noopener">@lib.Website</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="qe-meta-value">—</span>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(lib.Sentence) || !string.IsNullOrEmpty(lib.Paragraph))
+                            {
+                                <div class="lib-desc">
+                                    @if (!string.IsNullOrEmpty(lib.Sentence))
+                                    {
+                                        <div class="lib-sentence">@lib.Sentence</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(lib.Paragraph))
+                                    {
+                                        <div class="lib-paragraph">@lib.Paragraph</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </ItemContent>
+                </Virtualize>
+            }
+        }
+        else
+        {
+            @if (FilteredAvailable.Count == 0)
+            {
+                <div class="qe-manager-empty">
+                    @(string.IsNullOrWhiteSpace(_filter) ? "暂无可用库，请点「同步索引」下载库索引" : "没有匹配的可安装库")
+                </div>
+            }
+            else
+            {
+                <Virtualize Items="FilteredAvailable" Context="lib" ItemSize="140" OverscanCount="5">
+                    <ItemContent>
+                        <div class="qe-card qe-card-accent-info">
+                            <div class="qe-card-header">
+                                <div class="qe-card-title">
+                                    <span class="qe-card-name">@lib.Name</span>
+                                    @if (!string.IsNullOrEmpty(lib.Latest))
+                                    {
+                                        <span class="qe-badge qe-badge-warning mono">@lib.Latest</span>
+                                    }
+                                    else if (!string.IsNullOrEmpty(lib.Version))
+                                    {
+                                        <span class="qe-badge qe-badge-warning mono">@lib.Version</span>
+                                    }
+                                </div>
+                                <div class="qe-card-actions">
+                                    @if (lib.Releases.Count > 0)
+                                    {
+                                        <select class="qe-select qe-input-sm"
+                                                @onchange="e => SetSelectedVersion(lib.Name, e.Value?.ToString())">
+                                            @foreach (var v in lib.Releases)
+                                            {
+                                                <option value="@v" selected="@(GetSelectedVersion(lib.Name) == v)">@v</option>
+                                            }
+                                        </select>
+                                    }
+                                    <button class="qe-btn qe-btn-xs qe-btn-outline-success"
+                                            @onclick="() => InstallLibraryAsync(lib, GetSelectedVersion(lib.Name))"
+                                            disabled="@_busy">
+                                        安装
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="qe-meta-grid">
+                                <div class="qe-meta-item">
+                                    <span class="qe-meta-label">作者</span>
+                                    <span class="qe-meta-value">@(string.IsNullOrEmpty(lib.Author) ? "—" : lib.Author)</span>
+                                </div>
+                                <div class="qe-meta-item">
+                                    <span class="qe-meta-label">维护者</span>
+                                    <span class="qe-meta-value">@(string.IsNullOrEmpty(lib.Maintainer) ? "—" : lib.Maintainer)</span>
+                                </div>
+                                <div class="qe-meta-item">
+                                    <span class="qe-meta-label">最新版本</span>
+                                    <span class="qe-meta-value">@(string.IsNullOrEmpty(lib.Latest) ? "—" : lib.Latest)</span>
+                                </div>
+                                <div class="qe-meta-item">
+                                    <span class="qe-meta-label">可用版本</span>
+                                    <span class="qe-meta-value">@lib.Releases.Count 个</span>
+                                </div>
+                                <div class="qe-meta-item">
+                                    <span class="qe-meta-label">分类</span>
+                                    <span class="qe-meta-value">@(string.IsNullOrEmpty(lib.Category) ? "—" : lib.Category)</span>
+                                </div>
+                                <div class="qe-meta-item">
+                                    <span class="qe-meta-label">官网</span>
+                                    @if (!string.IsNullOrEmpty(lib.Website))
+                                    {
+                                        <a class="qe-meta-link" href="@lib.Website" target="_blank" rel="noopener">@lib.Website</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="qe-meta-value">—</span>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(lib.Sentence) || !string.IsNullOrEmpty(lib.Paragraph))
+                            {
+                                <div class="lib-desc">
+                                    @if (!string.IsNullOrEmpty(lib.Sentence))
+                                    {
+                                        <div class="lib-sentence">@lib.Sentence</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(lib.Paragraph))
+                                    {
+                                        <div class="lib-paragraph">@lib.Paragraph</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </ItemContent>
+                </Virtualize>
+            }
+        }
+    </div>
+
+    @if (_busy && !string.IsNullOrEmpty(_busyText))
+    {
+        <div class="qe-manager-mask">
+            <div class="qe-manager-mask-box qe-manager-mask-log">
+                <div class="qe-manager-mask-header">
+                    <i class="qe-ico qe-ico-refresh qe-manager-mask-spin"></i>
+                    <span class="qe-manager-mask-text">@_busyText</span>
+                </div>
+                @if (_busyLogs.Count == 0)
+                {
+                    <div class="qe-manager-mask-detail">@_busyDetail</div>
+                }
+                else
+                {
+                    <div class="qe-manager-mask-log-list" @ref="_logRef">
+                        @foreach (var line in _busyLogs)
+                        {
+                            <div class="qe-manager-mask-log-line">@line</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ArduinoLibraryInfo> _installed = new();
+    private List<ArduinoLibraryInfo> _available = new();
+    private string _filter = "";
+    private bool _busy;
+    private string _busyText = "";
+    private string _busyDetail = "";
+    private string _activeTab = "installed";
+
+    private List<string> _busyLogs = new();
+    private ElementReference _logRef;
+    private int _lastLogCount;
+
+    private Dictionary<string, string> _selectedVersions = new(StringComparer.OrdinalIgnoreCase);
+
+    private static List<ArduinoLibraryInfo>? _cachedInstalled;
+    private static List<ArduinoLibraryInfo>? _cachedAvailable;
+
+    private List<ArduinoLibraryInfo> FilteredInstalled =>
+        string.IsNullOrWhiteSpace(_filter)
+            ? _installed
+            : _installed.Where(MatchesFilter).ToList();
+
+    private List<ArduinoLibraryInfo> FilteredAvailable =>
+        string.IsNullOrWhiteSpace(_filter)
+            ? _available
+            : _available.Where(MatchesFilter).ToList();
+
+    private bool MatchesFilter(ArduinoLibraryInfo lib)
+    {
+
+        if (string.IsNullOrWhiteSpace(_filter)) return true;
+        return lib.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase);
+        // if (string.IsNullOrWhiteSpace(_filter)) return true;
+        // return lib.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+        //     || lib.Author.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+        //     || lib.Maintainer.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+        //     || lib.Sentence.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+        //     || lib.Category.Contains(_filter, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetTabClass(string tab) =>
+        tab == _activeTab ? "qe-manager-tab active" : "qe-manager-tab";
+
+    private void SwitchToInstalled()
+    {
+        _activeTab = "installed";
+        StateHasChanged();
+    }
+
+    private void SwitchToAvailable()
+    {
+        _activeTab = "available";
+        StateHasChanged();
+    }
+
+    private string? GetSelectedVersion(string name)
+    {
+        if (_selectedVersions.TryGetValue(name, out var v))
+            return v;
+
+        var lib = _available.FirstOrDefault(l => l.Name == name);
+        var first = lib?.Releases.FirstOrDefault() ?? lib?.Latest;
+        if (!string.IsNullOrEmpty(first))
+            _selectedVersions[name] = first;
+        return first;
+    }
+
+    private void SetSelectedVersion(string name, string? version)
+    {
+        if (!string.IsNullOrEmpty(version))
+            _selectedVersions[name] = version;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_cachedInstalled != null)
+        {
+            _installed = _cachedInstalled;
+            _available = _cachedAvailable ?? new();
+            StateHasChanged();
+            return;
+        }
+
+        _busyText = "加载库列表";
+        _busyDetail = "正在读取已安装库和可安装库列表...";
+        StateHasChanged();
+
+        var r = await CliSvc.ListInstalledLibrariesAsync();
+        _installed = CliSvc.ParseInstalledLibraries(r);
+
+        var all = CliSvc.LoadAllLibrariesFromIndex();
+        var installedNames = _installed.Select(l => l.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _available = all.Where(l => !installedNames.Contains(l.Name)).ToList();
+
+        _cachedInstalled = _installed;
+        _cachedAvailable = _available;
+
+        _busyText = "";
+        _busyDetail = "";
+        StateHasChanged();
+    }
+
+    private async Task SyncAsync()
+    {
+        if (_busy) return;
+
+        _busy = true;
+        _busyText = "同步库索引";
+        _busyDetail = "正在下载库索引并刷新已安装列表...";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+
+        var r = await CliSvc.SyncLibrariesStreamAsync(
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }),
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }));
+
+        if (r.Success)
+        {
+            _installed = CliSvc.ParseInstalledLibraries(r);
+
+            var all = CliSvc.LoadAllLibrariesFromIndex();
+            var installedNames = _installed.Select(l => l.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            _available = all.Where(l => !installedNames.Contains(l.Name)).ToList();
+
+            _cachedInstalled = _installed;
+            _cachedAvailable = _available;
+        }
+        else
+        {
+            await Dialog.AlertAsync("同步失败：" + r.Error);
+        }
+
+        _busy = false;
+        _busyText = "";
+        _busyDetail = "";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+    }
+
+    private async Task InstallLibraryAsync(ArduinoLibraryInfo lib, string? version)
+    {
+        if (_busy) return;
+
+        _busy = true;
+        _busyText = string.IsNullOrEmpty(version) ? $"安装 {lib.Name}" : $"安装 {lib.Name}@{version}";
+        _busyDetail = "正在下载库文件...";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+
+        var r = await CliSvc.InstallLibraryStreamAsync(lib.Name, version,
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }),
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }));
+
+        if (r.Success)
+        {
+            _activeTab = "installed";
+        }
+        else
+        {
+            await Dialog.AlertAsync("安装失败：" + r.Error);
+        }
+
+        var listR = await CliSvc.ListInstalledLibrariesAsync();
+        _installed = CliSvc.ParseInstalledLibraries(listR);
+        _available = _available.Where(l => !_installed.Any(i => string.Equals(i.Name, l.Name, StringComparison.OrdinalIgnoreCase))).ToList();
+
+        _cachedInstalled = _installed;
+        _cachedAvailable = _available;
+
+        _busy = false;
+        _busyText = "";
+        _busyDetail = "";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+    }
+
+    private async Task UninstallLibraryAsync(ArduinoLibraryInfo lib)
+    {
+        if (_busy) return;
+
+        var confirm = await Dialog.ConfirmAsync(
+            $"确定卸载库 {lib.Name} 吗？\n项目中引用该库的代码将无法编译，源文件不会被删除。");
+        if (!confirm) return;
+
+        _busy = true;
+        _busyText = $"卸载 {lib.Name}";
+        _busyDetail = "正在卸载...";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+
+        var r = await CliSvc.UninstallLibraryStreamAsync(lib.Name,
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }),
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }));
+
+        if (!r.Success)
+            await Dialog.AlertAsync("卸载失败：" + r.Error);
+
+        var listR = await CliSvc.ListInstalledLibrariesAsync();
+        _installed = CliSvc.ParseInstalledLibraries(listR);
+
+        var all = CliSvc.LoadAllLibrariesFromIndex();
+        var installedNames = _installed.Select(l => l.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _available = all.Where(l => !installedNames.Contains(l.Name)).ToList();
+
+        _cachedInstalled = _installed;
+        _cachedAvailable = _available;
+
+        _busy = false;
+        _busyText = "";
+        _busyDetail = "";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+    }
+
+    private async Task CheckUpdateAsync(ArduinoLibraryInfo lib)
+    {
+        if (_busy) return;
+
+        _busy = true;
+        _busyText = $"检查 {lib.Name} 更新";
+        _busyDetail = "正在查询最新版本...";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+
+        var r = await CliSvc.SearchLibrariesStreamAsync(lib.Name,
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }),
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }));
+
+        var results = CliSvc.ParseSearchLibraries(r);
+        var hit = results.FirstOrDefault(x => string.Equals(x.Name, lib.Name, StringComparison.OrdinalIgnoreCase));
+
+        _busy = false;
+        _busyText = "";
+        _busyDetail = "";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+
+        if (hit == null)
+        {
+            await Dialog.AlertAsync("未在索引中找到该库，无法检查更新");
+            StateHasChanged();
+            return;
+        }
+
+        var latest = string.IsNullOrEmpty(hit.Latest) ? hit.Version : hit.Latest;
+        var hasUpdate = !string.IsNullOrEmpty(latest) &&
+                        !string.Equals(latest, lib.Version, StringComparison.OrdinalIgnoreCase);
+
+        if (hasUpdate)
+        {
+            lib.Latest = latest;
+            lib.Releases = hit.Releases;
+            await Dialog.AlertAsync($"有新版本：{lib.Version} → {latest}");
+        }
+        else
+        {
+            await Dialog.AlertAsync($"已是最新版本 {lib.Version}");
+        }
+
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_busyLogs.Count == _lastLogCount) return;
+
+        _lastLogCount = _busyLogs.Count;
+        try { await JS.InvokeVoidAsync("quickEditer.scrollManagerLogToBottom"); } catch { }
+    }
+
+    private void AppendBusyLog(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line)) return;
+        _busyLogs.Add(line.TrimEnd('\r'));
+        if (_busyLogs.Count > 500)
+            _busyLogs.RemoveRange(0, _busyLogs.Count - 500);
+    }
+}

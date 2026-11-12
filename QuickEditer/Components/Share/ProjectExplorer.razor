@@ -1,0 +1,69 @@
+﻿@* 文件路径：Components/Share/ProjectExplorer.razor *@
+
+@using QuickEditer.Core
+@using QuickEditer.Models
+
+<div class="project-explorer">
+    <div class="explorer-header">
+        <span>解决方案资源管理器</span>
+        <button class="qe-icon-btn" title="刷新" @onclick="Refresh">
+            <i class="qe-ico qe-ico-refresh"></i>
+        </button>
+    </div>
+
+    <input class="qe-input qe-input-sm"
+           placeholder="过滤文件"
+           @bind="_filter"
+           @bind:event="oninput" />
+
+
+    <div class="explorer-body">
+        @if (Root != null)
+        {
+            <ProjectTreeNodeView Node="@Root"
+                                 Depth="0"
+                                 SelectedPath="@SelectedPath"
+                                 Filter="@_filter"
+                                 OnSelect="HandleSelect"
+                                 OnContextMenu="HandleContextMenu"
+                                 OnRenameRequest="HandleRenameRequest"
+                                 OnMoveRequest="OnMoveRequest" />
+        }
+        else
+        {
+            <div class="explorer-empty">未打开项目</div>
+        }
+    </div>
+</div>
+
+@code {
+    private string _filter = "";
+
+    [Parameter] public ProjectTreeNode? Root { get; set; }
+    [Parameter] public string? SelectedPath { get; set; }
+    [Parameter] public EventCallback<ProjectTreeNode> OnSelect { get; set; }
+    [Parameter] public EventCallback<(ProjectTreeNode Node, string Action)> OnContextMenu { get; set; }
+    [Parameter] public EventCallback<ProjectTreeNode> OnRenameRequest { get; set; }
+    [Parameter] public EventCallback OnRefresh { get; set; }
+    [Parameter] public EventCallback<(string SourcePath, string TargetDirPath)> OnMoveRequest { get; set; }
+
+    private async Task HandleSelect(ProjectTreeNode node)
+    {
+        if (OnSelect.HasDelegate) await OnSelect.InvokeAsync(node);
+    }
+
+    private async Task HandleContextMenu((ProjectTreeNode Node, string Action) e)
+    {
+        if (OnContextMenu.HasDelegate) await OnContextMenu.InvokeAsync(e);
+    }
+
+    private async Task HandleRenameRequest(ProjectTreeNode node)
+    {
+        if (OnRenameRequest.HasDelegate) await OnRenameRequest.InvokeAsync(node);
+    }
+
+    private async Task Refresh()
+    {
+        if (OnRefresh.HasDelegate) await OnRefresh.InvokeAsync();
+    }
+}

@@ -1,0 +1,197 @@
+﻿/* 文件路径：Components/Share/OpenProjectDialog.razor.css */
+
+.open-project-panel {
+    display: flex;
+    flex-direction: column;
+    width: 640px;
+    max-width: 100%;
+    max-height: 520px;
+}
+
+.open-project-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 56px 20px;
+    color: var(--qe-text-dimmer);
+}
+
+    .open-project-empty .qe-ico {
+        font-size: 40px;
+        color: var(--qe-border);
+    }
+
+.open-project-empty-title {
+    font-size: 15px;
+    color: var(--qe-text-dim);
+}
+
+.open-project-empty-hint {
+    font-size: 12px;
+}
+
+.open-project-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+    .open-project-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .open-project-list::-webkit-scrollbar-thumb {
+        background: var(--qe-border);
+        border-radius: 3px;
+    }
+
+.open-project-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    background: var(--qe-bg);
+    border: 1px solid var(--qe-border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, transform .1s;
+}
+
+    .open-project-card:hover {
+        background: var(--qe-bg-3);
+        border-color: var(--qe-text-dimmer);
+        transform: translateY(-1px);
+    }
+
+    .open-project-card.active {
+        border-color: var(--qe-accent);
+        background: rgba(0, 122, 204, 0.1);
+    }
+
+.open-project-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(86, 156, 214, 0.25), rgba(78, 201, 176, 0.15));
+    color: var(--qe-accent-text);
+    flex-shrink: 0;
+    border: 1px solid rgba(86, 156, 214, 0.25);
+}
+
+    .open-project-icon .qe-ico {
+        font-size: 20px;
+    }
+
+.open-project-card.active .open-project-icon {
+    background: linear-gradient(135deg, rgba(0, 122, 204, 0.4), rgba(78, 201, 176, 0.25));
+    color: var(--qe-accent-text-hover);
+}
+
+.open-project-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.open-project-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--qe-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.open-project-card.active .open-project-name {
+    color: var(--qe-text-bright);
+}
+
+.open-project-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.open-project-path {
+    font-size: 11px;
+    color: var(--qe-text-dimmer);
+    font-family: var(--qe-mono);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.open-project-sub {
+    font-size: 11px;
+    color: var(--qe-text-dim);
+}
+
+.open-project-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity .15s;
+}
+
+.open-project-card:hover .open-project-actions,
+.open-project-card.active .open-project-actions {
+    opacity: 1;
+}
+
+.open-project-confirm {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(244, 135, 113, 0.1);
+    border: 1px solid rgba(244, 135, 113, 0.45);
+    border-radius: 8px;
+    animation: openConfirmIn .15s ease-out;
+}
+
+@keyframes openConfirmIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.open-project-confirm .qe-ico-warning {
+    color: var(--qe-error);
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.open-project-confirm-text {
+    flex: 1;
+    min-width: 200px;
+    font-size: 12px;
+    color: var(--qe-text);
+    line-height: 1.5;
+}
+
+    .open-project-confirm-text b {
+        color: var(--qe-error);
+    }
+
+.open-project-confirm-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}

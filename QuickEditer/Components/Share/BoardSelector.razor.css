@@ -1,0 +1,159 @@
+﻿/* 文件路径：Components/Share/BoardSelector.razor.css */
+
+.board-selector {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+.board-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    background: var(--qe-bg-2);
+    border: 1px solid var(--qe-border);
+    border-radius: 5px;
+    color: var(--qe-text);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+    font-family: inherit;
+    width: 220px;
+}
+
+    .board-btn:hover {
+        background: var(--qe-bg-3);
+        border-color: var(--qe-text-dimmer);
+    }
+
+.board-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 180px;
+}
+
+.board-arrow {
+    flex-shrink: 0;
+    transition: transform .2s ease;
+    color: var(--qe-text-dim);
+}
+
+.board-btn:hover .board-arrow {
+    color: var(--qe-text);
+}
+
+.board-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 320px;
+    max-width: 420px;
+    max-height: 360px;
+    display: flex;
+    flex-direction: column;
+    background: var(--qe-bg-2);
+    border: 1px solid var(--qe-border);
+    border-radius: 8px;
+    box-shadow: 0 12px 36px var(--qe-shadow);
+    z-index: 3000;
+    overflow: hidden;
+    animation: boardMenuIn .12s ease-out;
+}
+
+@keyframes boardMenuIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.board-menu-search {
+    padding: 8px;
+    border-bottom: 1px solid var(--qe-border);
+    flex-shrink: 0;
+}
+
+.board-menu-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+    .board-menu-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .board-menu-list::-webkit-scrollbar-thumb {
+        background: var(--qe-border);
+        border-radius: 3px;
+    }
+
+.board-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background .12s;
+}
+
+    .board-menu-item:hover {
+        background: var(--qe-hover);
+    }
+
+    .board-menu-item.active {
+        background: rgba(0, 122, 204, 0.18);
+    }
+
+.board-menu-item-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.board-menu-item-name {
+    font-size: 13px;
+    color: var(--qe-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.board-menu-item-fqbn {
+    font-size: 11px;
+    color: var(--qe-text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+}
+
+.board-check {
+    color: var(--qe-success);
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.board-menu-empty {
+    padding: 18px 14px;
+    font-size: 12px;
+    color: var(--qe-text-dim);
+    text-align: center;
+}
+
+.board-menu-section {
+    padding: 7px 10px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--qe-text-dim);
+}

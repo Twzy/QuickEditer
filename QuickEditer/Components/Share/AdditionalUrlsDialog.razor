@@ -1,0 +1,57 @@
+﻿@* 文件路径：Components/Share/AdditionalUrlsDialog.razor *@
+@using QuickEditer.Core
+
+<div class="urls-panel">
+    <div class="urls-hint">
+        每行一个 URL，或使用英文逗号分隔。保存后写入 arduino-cli.yaml，需在「开发板管理」中点「更新索引」后生效。
+    </div>
+
+    <textarea class="form-control urls-textarea"
+              rows="8"
+              placeholder="https://espressif.github.io/arduino-esp32/package_esp32_index.json&#10;https://arduino.esp8266.com/stable/package_esp8266com_index.json"
+              @bind="_text"></textarea>
+
+    <div class="urls-footer-hint">
+        当前已保存：@(string.IsNullOrWhiteSpace(Config.Cfg.AdditionalUrls) ? "无" : Config.Cfg.AdditionalUrls)
+    </div>
+</div>
+
+@code {
+    private string _text = "";
+
+    [Parameter] public EventCallback<string> OnSave { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        _text = Config.Cfg.AdditionalUrls ?? "";
+    }
+
+    /// <summary>供父组件调用：提交</summary>
+    public async Task SubmitAsync()
+    {
+        var normalized = Normalize(_text);
+        if (OnSave.HasDelegate)
+            await OnSave.InvokeAsync(normalized);
+    }
+
+    /// <summary>供父组件调用：重置为当前配置</summary>
+    public void Reset()
+    {
+        _text = Config.Cfg.AdditionalUrls ?? "";
+    }
+
+    private static string Normalize(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return "";
+
+        var parts = raw
+            .Replace("\r\n", "\n")
+            .Replace('\r', '\n')
+            .Split(new[] { '\n', ',' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim())
+            .Where(s => !string.IsNullOrEmpty(s))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        return string.Join(",", parts);
+    }
+}

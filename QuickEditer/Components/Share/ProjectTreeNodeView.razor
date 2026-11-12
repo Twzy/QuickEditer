@@ -1,0 +1,257 @@
+﻿@* 文件路径：Components/Share/ProjectTreeNodeView.razor *@
+
+
+@using QuickEditer.Core
+@using QuickEditer.Models
+@inject IJSRuntime JS
+@implements IDisposable
+
+@if (Node.NodeType != ProjectNodeType.File || MatchesFilter)
+{
+    <div class="tree-node">
+        <div class="tree-row @(IsSelected ? "selected" : "")"
+             style="padding-left:@(Depth * 14 + 6)px"
+             draggable="@(!ReadOnlyMode)"
+             @onclick="HandleClick"
+             @oncontextmenu="OpenContextMenu"
+             @oncontextmenu:preventDefault="true"
+             @ondragstart="HandleDragStart"
+             @ondragover:preventDefault="true"
+             @ondrop:preventDefault="true"
+             @ondrop="HandleDrop">
+            @if (HasChildren)
+            {
+                <span class="tree-arrow" @onclick:stopPropagation="true" @onclick="Toggle">
+                    @(Expanded ? "▾" : "▸")
+                </span>
+            }
+            else
+            {
+                <span class="tree-arrow"></span>
+            }
+
+            <span class="tree-icon @IconColorClass"><i class="qe-ico @IconClass"></i></span>
+            <span class="tree-name">@Node.Name</span>
+        </div>
+
+        @if (Expanded && HasChildren)
+        {
+            <div class="tree-children">
+                @foreach (var child in Node.Children)
+                {
+                    <ProjectTreeNodeView Node="@child" Depth="@(Depth + 1)"
+                                         SelectedPath="@SelectedPath"
+                                         Filter="@Filter"
+                                         ReadOnlyMode="@ReadOnlyMode"
+                                         OnSelect="OnSelect"
+                                         OnContextMenu="OnContextMenu"
+                                         OnRenameRequest="OnRenameRequest"
+                                         OnMoveRequest="OnMoveRequest" />
+                }
+            </div>
+        }
+
+        @if (!ReadOnlyMode && _menuVisible)
+        {
+            <div class="context-menu" style="left:@(_menuX)px;top:@(_menuY)px" @onclick:stopPropagation="true">
+                @if (Node.NodeType == ProjectNodeType.ProjectRoot || Node.NodeType == ProjectNodeType.Folder)
+                {
+                    <div class="context-item" @onclick="NewFolderAsync">
+                        <i class="qe-ico qe-ico-folder"></i> 新建文件夹
+                    </div>
+                    <div class="context-item" @onclick="NewFileAsync">
+                        <i class="qe-ico qe-ico-file"></i> 新建文件
+                    </div>
+
+                    <div class="context-item" @onclick="UploadAsync">
+                        <i class="qe-ico qe-ico-upload"></i> 上传文件
+                    </div>
+                }
+                @if (Node.NodeType == ProjectNodeType.File || Node.NodeType == ProjectNodeType.Folder)
+                {
+                    @if (CanRename)
+                    {
+                        <div class="context-item" @onclick="RenameAsync">
+                            <i class="qe-ico qe-ico-edit"></i> 重命名
+                        </div>
+                    }
+                    <div class="context-item danger" @onclick="DeleteAsync">
+                        <i class="qe-ico qe-ico-delete"></i> 删除
+                    </div>
+                }
+                @if (Node.NodeType == ProjectNodeType.ProjectRoot || Node.NodeType == ProjectNodeType.Folder)
+                {
+                    <div class="context-item" @onclick="RefreshAsync">
+                        <i class="qe-ico qe-ico-refresh"></i> 刷新
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public ProjectTreeNode Node { get; set; } = new();
+    [Parameter] public int Depth { get; set; }
+    [Parameter] public string? SelectedPath { get; set; }
+    [Parameter] public string? Filter { get; set; }
+    [Parameter] public bool ReadOnlyMode { get; set; }
+    [Parameter] public EventCallback<ProjectTreeNode> OnSelect { get; set; }
+    [Parameter] public EventCallback<(ProjectTreeNode Node, string Action)> OnContextMenu { get; set; }
+    [Parameter] public EventCallback<ProjectTreeNode> OnRenameRequest { get; set; }
+    [Parameter] public EventCallback<(string SourcePath, string TargetDirPath)> OnMoveRequest { get; set; }
+
+    private bool Expanded { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Expanded = ReadOnlyMode || Node.NodeType == ProjectNodeType.ProjectRoot;
+    }
+
+    private bool _menuVisible;
+    private double _menuX, _menuY;
+    private DotNetObjectReference<ProjectTreeNodeView>? _selfRef;
+
+    private bool HasChildren => Node.Children.Count > 0;
+    private bool IsSelected => string.Equals(SelectedPath, Node.FullPath, StringComparison.OrdinalIgnoreCase);
+
+    private bool MatchesFilter =>
+        string.IsNullOrWhiteSpace(Filter) ||
+        Node.Name.Contains(Filter, StringComparison.OrdinalIgnoreCase);
+
+    private string IconClass => Node.NodeType switch
+    {
+        ProjectNodeType.ProjectRoot => "qe-ico-tools",
+        ProjectNodeType.Folder => "qe-ico-folder",
+        ProjectNodeType.File => FileTypeHelper.GetIconClass(Node.Name),
+        _ => "qe-ico-file"
+    };
+
+    private bool CanRename
+    {
+        get
+        {
+            if (Node.NodeType == ProjectNodeType.Folder) return true;
+            if (Node.NodeType != ProjectNodeType.File) return false;
+
+            var parent = System.IO.Path.GetDirectoryName(Node.FullPath);
+            if (string.IsNullOrEmpty(parent)) return true;
+
+            var projectName = System.IO.Path.GetFileName(parent);
+            return !FileTypeHelper.IsMainSketch(Node.FullPath, projectName);
+        }
+    }
+
+    private string IconColorClass => Node.NodeType == ProjectNodeType.File && FileTypeHelper.IsFirmware(Node.Name)
+        ? "tree-icon-firmware"
+        : "";
+
+
+ 
+
+    private async Task UploadAsync()
+    {
+        await CloseMenuLocalAsync();
+        if (OnContextMenu.HasDelegate)
+            await OnContextMenu.InvokeAsync((Node, "upload"));
+    }
+
+
+    private void Toggle() => Expanded = !Expanded;
+
+    private async Task HandleClick()
+    {
+        if (OnSelect.HasDelegate)
+            await OnSelect.InvokeAsync(Node);
+    }
+
+    private void HandleDragStart(DragEventArgs e)
+    {
+        if (ReadOnlyMode) return;
+        if (Node.NodeType == ProjectNodeType.ProjectRoot)
+            return;
+
+        _ = JS.InvokeVoidAsync("quickEditer.setDragSource", Node.FullPath);
+    }
+
+    private async Task HandleDrop(DragEventArgs e)
+    {
+        if (ReadOnlyMode) return;
+        if (Node.NodeType == ProjectNodeType.File) return;
+
+        var source = await JS.InvokeAsync<string>("quickEditer.getDragSource");
+        if (string.IsNullOrEmpty(source)) return;
+
+        if (OnMoveRequest.HasDelegate)
+            await OnMoveRequest.InvokeAsync((source, Node.FullPath));
+    }
+
+    private async Task OpenContextMenu(MouseEventArgs e)
+    {
+        if (OnSelect.HasDelegate)
+            await OnSelect.InvokeAsync(Node);
+
+        if (ReadOnlyMode) return;
+
+        _menuX = e.ClientX;
+        _menuY = e.ClientY;
+        _menuVisible = true;
+
+        _selfRef ??= DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("quickEditer.registerContextMenuClose", _selfRef);
+    }
+
+    [JSInvokable]
+    public async Task CloseContextMenu()
+    {
+        if (!_menuVisible) return;
+        _menuVisible = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CloseMenuLocalAsync()
+    {
+        _menuVisible = false;
+        await JS.InvokeVoidAsync("quickEditer.unregisterContextMenuClose");
+    }
+
+    private async Task NewFolderAsync()
+    {
+        await CloseMenuLocalAsync();
+        if (OnContextMenu.HasDelegate)
+            await OnContextMenu.InvokeAsync((Node, "new-folder"));
+    }
+
+    private async Task NewFileAsync()
+    {
+        await CloseMenuLocalAsync();
+        if (OnContextMenu.HasDelegate)
+            await OnContextMenu.InvokeAsync((Node, "new-file"));
+    }
+
+    private async Task RenameAsync()
+    {
+        await CloseMenuLocalAsync();
+        if (OnRenameRequest.HasDelegate)
+            await OnRenameRequest.InvokeAsync(Node);
+    }
+
+    private async Task DeleteAsync()
+    {
+        await CloseMenuLocalAsync();
+        if (OnContextMenu.HasDelegate)
+            await OnContextMenu.InvokeAsync((Node, "delete"));
+    }
+
+    private async Task RefreshAsync()
+    {
+        await CloseMenuLocalAsync();
+        if (OnContextMenu.HasDelegate)
+            await OnContextMenu.InvokeAsync((Node, "refresh"));
+    }
+
+    public void Dispose()
+    {
+        _selfRef?.Dispose();
+    }
+}

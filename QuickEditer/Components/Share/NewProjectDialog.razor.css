@@ -1,0 +1,54 @@
+﻿/* 文件路径：Components/Share/NewProjectDialog.razor.css */
+
+.new-project-form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 380px;
+}
+
+.required {
+    color: var(--qe-error);
+    margin-left: 2px;
+}
+
+.form-hint-line {
+    min-height: 18px;
+    line-height: 18px;
+    margin-top: 5px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.form-hint {
+    font-size: 12px;
+    color: var(--qe-text-dim);
+}
+
+    .form-hint code {
+        background: var(--qe-bg);
+        padding: 1px 6px;
+        border-radius: 3px;
+        color: #ce9178;
+        font-size: 12px;
+        font-family: var(--qe-mono);
+    }
+
+.form-error {
+    font-size: 12px;
+    color: var(--qe-error);
+}
+
+.form-control.is-invalid {
+    border-color: var(--qe-error);
+    box-shadow: 0 0 0 3px rgba(244, 135, 113, 0.18);
+}
+
+.mt-2 {
+    margin-top: 8px;
+}
+
+.mt-3 {
+    margin-top: 14px;
+}

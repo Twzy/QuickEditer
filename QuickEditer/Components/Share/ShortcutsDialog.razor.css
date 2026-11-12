@@ -1,0 +1,28 @@
+﻿/* 文件路径：Components/Share/ShortcutsDialog.razor.css */
+
+.shortcuts-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 420px;
+}
+
+.shortcut-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--qe-text);
+}
+
+    .shortcut-row kbd {
+        min-width: 120px;
+        padding: 3px 8px;
+        background: var(--qe-bg);
+        border: 1px solid var(--qe-border);
+        border-radius: 4px;
+        font-family: var(--qe-mono);
+        font-size: 11px;
+        color: var(--qe-accent-text);
+        text-align: center;
+    }

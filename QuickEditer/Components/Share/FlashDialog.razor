@@ -1,0 +1,325 @@
+﻿@* 文件路径：Components/Share/FlashDialog.razor *@
+@using QuickEditer.Models
+@using QuickEditer.Services
+@inject IJSRuntime JS
+@inject ProjectService ProjectSvc
+@implements IAsyncDisposable
+
+<div class="flash-panel">
+    <div class="flash-toolbar">
+        <label class="flash-label">波特率</label>
+        <select class="qe-select qe-input-sm" @bind="_baudRate">
+            @foreach (var b in BaudRates)
+            {
+                <option value="@b">@b</option>
+            }
+        </select>
+
+        <label class="flash-check">
+            <input type="checkbox" @bind="_eraseAll" />
+            全片擦除
+        </label>
+
+        <button class="qe-btn qe-btn-sm qe-btn-outline-success" @onclick="FlashAsync" disabled="@_busy">
+            <i class="qe-ico qe-ico-power"></i> 开始烧录
+        </button>
+        <button class="qe-btn qe-btn-sm qe-btn-ghost" @onclick="RefreshFiles" disabled="@_busy">
+            <i class="qe-ico qe-ico-refresh"></i> 刷新
+        </button>
+        <button class="qe-btn qe-btn-sm qe-btn-ghost" @onclick="ClearLogs" disabled="@(_logs.Count == 0)">
+            清空日志
+        </button>
+    </div>
+
+    <div class="flash-files">
+        @if (_files.Count == 0)
+        {
+            <div class="flash-empty">build 目录中没有可用固件，请先编译。</div>
+        }
+        else
+        {
+            @foreach (var f in _files)
+            {
+                <div class="flash-file @(f.Selected ? "selected" : "") @(f.IsMerged ? "merged" : "")"
+                     @onclick="() => ToggleFile(f)">
+                    <input type="checkbox" checked="@f.Selected" @onclick:stopPropagation="true" @onclick="() => ToggleFile(f)" />
+                    @if (f.IsMerged)
+                    {
+                        <i class="qe-ico qe-ico-firmware flash-file-badge"></i>
+                    }
+                    <span class="flash-file-name">@f.FileName</span>
+                    @if (f.IsMerged)
+                    {
+                        <span class="flash-file-tag">合并固件</span>
+                    }
+                    <span class="flash-file-size">@FormatSize(f.Size)</span>
+                    <input class="qe-input qe-input-sm flash-addr" type="text" value="@f.AddressText"
+                           @onchange="e => SetAddress(f, e.Value?.ToString())" @onclick:stopPropagation="true" placeholder="地址" />
+                </div>
+            }
+        }
+    </div>
+
+    <div class="flash-progress">
+        <div class="flash-progress-bar" style="width:@(_progress)%"></div>
+        <span class="flash-progress-text">@_progress%</span>
+    </div>
+
+    <div class="flash-log" @ref="_logRef">
+        @foreach (var l in _logs)
+        {
+            <div class="flash-log-line @(l.IsError ? "error" : "")">@l.Text</div>
+        }
+    </div>
+
+    <div class="flash-notice">
+        <div class="flash-notice-title"><i class="qe-ico qe-ico-warning"></i> 注意事项</div>
+        <ul class="flash-notice-list">
+            <li>仅支持 ESP32 / ESP8266 系列，通过 Web Serial 在浏览器本地烧录。</li>
+            <li>需要 Chrome / Edge 等 Chromium 浏览器，且页面为 HTTPS 或 localhost。</li>
+            <li>烧录前请确认已编译并选中正确的固件与地址。</li>
+            <li><code>xxx.merged.bin</code> 为合并后的固件，烧录地址为 <code>0x0</code>，单独烧录它即可完成完整固件写入。</li>
+            <li>AVR 等其他芯片请下载固件后用本地工具烧录。</li>
+        </ul>
+    </div>
+
+</div>
+
+@code {
+    private static readonly int[] BaudRates = { 115200, 230400, 460800, 921600 };
+    private static readonly HashSet<string> FirmwareExts = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".bin", ".hex", ".uf2", ".eep"
+    };
+
+    private int _baudRate = 115200;
+    private bool _eraseAll;
+    private bool _busy;
+    private int _progress;
+    private List<FlashFileItem> _files = new();
+    private List<FlashLogItem> _logs = new();
+    private ElementReference _logRef;
+    private DotNetObjectReference<FlashDialog>? _selfRef;
+
+    [Parameter] public string ProjectName { get; set; } = "";
+    [Parameter] public string BoardFqbn { get; set; } = "";
+
+    private class FlashFileItem
+    {
+        public string FileName { get; set; } = "";
+        public string FullPath { get; set; } = "";
+        public long Size { get; set; }
+        public bool Selected { get; set; }
+        public bool IsMerged { get; set; }
+        public string AddressText { get; set; } = "0x10000";
+        public uint Address => ParseAddress(AddressText);
+    }
+
+    private class FlashLogItem
+    {
+        public string Text { get; set; } = "";
+        public bool IsError { get; set; }
+    }
+
+    protected override void OnParametersSet()
+    {
+        LoadBuildFiles();
+    }
+
+    private void LoadBuildFiles()
+    {
+        _files.Clear();
+
+        if (string.IsNullOrWhiteSpace(ProjectName)) return;
+
+        var buildDir = Path.Combine(ProjectSvc.GetProjectDir(ProjectName), "build");
+        if (!Directory.Exists(buildDir)) return;
+
+        var all = Directory.GetFiles(buildDir)
+            .Where(f => FirmwareExts.Contains(Path.GetExtension(f)))
+            .Select(f => new FileInfo(f))
+            .ToList();
+
+        var merged = all.FirstOrDefault(f =>
+            f.Name.Contains("merged", StringComparison.OrdinalIgnoreCase));
+
+        if (merged != null)
+        {
+            _files.Add(new FlashFileItem
+            {
+                FileName = merged.Name,
+                FullPath = merged.FullName,
+                Size = merged.Length,
+                Selected = true,
+                IsMerged = true,
+                AddressText = "0x0"
+            });
+        }
+
+        foreach (var f in all.Where(f => f != merged).OrderBy(f => f.Name))
+        {
+            _files.Add(new FlashFileItem
+            {
+                FileName = f.Name,
+                FullPath = f.FullName,
+                Size = f.Length,
+                Selected = merged == null,
+                IsMerged = false,
+                AddressText = GuessAddress(f.Name)
+            });
+        }
+    }
+
+    private void RefreshFiles()
+    {
+        LoadBuildFiles();
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("quickEditer.espFlasher.bindDotNet", _selfRef);
+        }
+
+        try { await _logRef.FocusAsync(); } catch { }
+    }
+
+    private static string GuessAddress(string fileName)
+    {
+        var lower = fileName.ToLowerInvariant();
+        if (lower.Contains("bootloader")) return "0x1000";
+        if (lower.Contains("partitions")) return "0x8000";
+        if (lower.Contains("boot_app0")) return "0xe000";
+        if (lower.Contains("merged")) return "0x0";
+        if (lower.Contains("spiffs")) return "0x290000";
+        return "0x10000";
+    }
+
+    private static uint ParseAddress(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return 0;
+        var s = text.Trim();
+        if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            s = s.Substring(2);
+        return uint.TryParse(s, System.Globalization.NumberStyles.HexNumber, null, out var v) ? v : 0;
+    }
+
+    private void ToggleFile(FlashFileItem f)
+    {
+        f.Selected = !f.Selected;
+    }
+
+    private void SetAddress(FlashFileItem f, string? value)
+    {
+        f.AddressText = value ?? "0x0";
+    }
+
+    private async Task FlashAsync()
+    {
+        if (_busy) return;
+
+        var selected = _files.Where(f => f.Selected).ToList();
+        if (selected.Count == 0)
+        {
+            await JS.InvokeVoidAsync("alert", "请至少选择一个固件文件。");
+            return;
+        }
+
+        _busy = true;
+        _progress = 0;
+        _logs.Clear();
+
+        try
+        {
+            var filePayloads = new List<object>();
+            foreach (var f in selected)
+            {
+                var bytes = await ReadFileBytesAsync(f.FullPath);
+                if (bytes == null || bytes.Length == 0)
+                {
+                    AddLog($"读取失败：{f.FileName}", true);
+                    _busy = false;
+                    return;
+                }
+
+                filePayloads.Add(new
+                {
+                    data = bytes,
+                    address = f.Address
+                });
+            }
+
+            AddLog($"开始烧录，{selected.Count} 个文件，波特率 {_baudRate}");
+
+            var ok = await JS.InvokeAsync<bool>("quickEditer.espFlasher.flash",
+                filePayloads, _baudRate, _eraseAll);
+
+            AddLog(ok ? "烧录成功" : "烧录失败", !ok);
+        }
+        catch (Exception ex)
+        {
+            AddLog("烧录异常：" + ex.Message, true);
+        }
+        finally
+        {
+            _busy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<byte[]?> ReadFileBytesAsync(string path)
+    {
+        try
+        {
+            if (!File.Exists(path)) return null;
+            return await File.ReadAllBytesAsync(path);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void ClearLogs()
+    {
+        _logs.Clear();
+    }
+
+    private void AddLog(string text, bool isError = false)
+    {
+        _logs.Add(new FlashLogItem { Text = text, IsError = isError });
+        if (_logs.Count > 500)
+            _logs.RemoveRange(0, _logs.Count - 500);
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnFlashLog(string text, bool isError)
+    {
+        _logs.Add(new FlashLogItem { Text = text, IsError = isError });
+        if (_logs.Count > 500)
+            _logs.RemoveRange(0, _logs.Count - 500);
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnFlashProgress(int percent)
+    {
+        _progress = percent;
+        StateHasChanged();
+    }
+
+    private static string FormatSize(long size) =>
+        size < 1024 ? $"{size} B"
+        : size < 1024 * 1024 ? $"{size / 1024.0:F1} KB"
+        : $"{size / 1024.0 / 1024.0:F2} MB";
+
+    public async ValueTask DisposeAsync()
+    {
+        _selfRef?.Dispose();
+        await Task.CompletedTask;
+    }
+}

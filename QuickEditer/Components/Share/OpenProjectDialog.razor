@@ -1,0 +1,107 @@
+﻿@* 文件路径：Components/Share/OpenProjectDialog.razor *@
+@using QuickEditer.Core
+@using QuickEditer.Services
+@inject ProjectService ProjectSvc
+@inject IJSRuntime JS
+
+<div class="open-project-panel">
+    @if (Projects.Count == 0)
+    {
+        <div class="open-project-empty">
+            <i class="qe-ico qe-ico-folder-open"></i>
+            <div class="open-project-empty-title">暂无历史项目</div>
+            <div class="open-project-empty-hint">点击顶部「新建项目」开始创作</div>
+        </div>
+    }
+    else
+    {
+        <div class="open-project-list">
+            @foreach (var p in Projects)
+            {
+                var name = p;
+                <div class="open-project-card @(name == SelectedProject ? "active" : "")"
+                     @onclick="() => SelectProject(name)"
+                     @ondblclick="() => OnOpenSelected.InvokeAsync(name)">
+                    <div class="open-project-icon">
+                        <i class="qe-ico qe-ico-tools"></i>
+                    </div>
+                    <div class="open-project-main">
+                        <div class="open-project-name">@name</div>
+                        <div class="open-project-meta">
+                            <span class="open-project-path" title="@GetProjectPath(name)">@GetProjectPath(name)</span>
+                        </div>
+                        <div class="open-project-sub">
+                            <span>修改于 @GetModifiedText(name)</span>
+                        </div>
+                    </div>
+                    <div class="open-project-actions">
+                        <button class="qe-icon-btn" title="打开" @onclick:stopPropagation="true" @onclick="() => OnOpenSelected.InvokeAsync(name)">
+                            <i class="qe-ico qe-ico-folder-open"></i>
+                        </button>
+                        <button class="qe-icon-btn" title="删除" @onclick:stopPropagation="true" @onclick="() => RequestDelete(name)">
+                            <i class="qe-ico qe-ico-delete"></i>
+                        </button>
+                    </div>
+                </div>
+
+                @if (_pendingDelete == name)
+                {
+                    <div class="open-project-confirm" @onclick:stopPropagation="true">
+                        <i class="qe-ico qe-ico-warning"></i>
+                        <span class="open-project-confirm-text">
+                            确定删除项目「<b>@name</b>」吗？该操作会删除整个项目目录，且不可恢复。
+                        </span>
+                        <div class="open-project-confirm-actions">
+                            <button class="qe-btn qe-btn-xs qe-btn-outline-danger" @onclick="() => ConfirmDeleteAsync(name)">
+                                确认删除
+                            </button>
+                            <button class="qe-btn qe-btn-xs qe-btn-outline-accent" @onclick="CancelDelete">
+                                取消
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public List<string> Projects { get; set; } = new();
+    [Parameter] public EventCallback<string> OnOpenSelected { get; set; }
+    [Parameter] public EventCallback<string> OnDeleteConfirmed { get; set; }
+
+    private string? SelectedProject { get; set; }
+    private string? _pendingDelete;
+
+    private void SelectProject(string name) => SelectedProject = name;
+
+    private void RequestDelete(string name)
+    {
+        _pendingDelete = _pendingDelete == name ? null : name;
+    }
+
+    private void CancelDelete() => _pendingDelete = null;
+
+    private async Task ConfirmDeleteAsync(string name)
+    {
+        _pendingDelete = null;
+        if (OnDeleteConfirmed.HasDelegate)
+            await OnDeleteConfirmed.InvokeAsync(name);
+    }
+
+    private static string GetProjectPath(string name) =>
+        Path.Combine(Config.ProjectsDir, name);
+
+    private static string GetModifiedText(string name)
+    {
+        try
+        {
+            var cfg = Path.Combine(Config.ProjectsDir, name, "project.xml");
+            if (File.Exists(cfg))
+                return File.GetLastWriteTime(cfg).ToString("yyyy-MM-dd HH:mm");
+        }
+        catch { }
+        return "—";
+    }
+}

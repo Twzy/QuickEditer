@@ -1,0 +1,124 @@
+﻿/* 文件路径：Components/Share/ProjectTreeNodeView.razor.css */
+
+.tree-node {
+    user-select: none;
+}
+
+.tree-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px 5px 0;
+    margin: 1px 4px;
+    font-size: 13px;
+    color: var(--qe-text);
+    cursor: pointer;
+    white-space: nowrap;
+    border-radius: 4px;
+    transition: background .12s, color .12s;
+}
+
+    .tree-row:hover {
+        background: var(--qe-hover);
+        color: var(--qe-text-bright);
+    }
+
+    .tree-row.selected {
+        background: var(--qe-hover);
+        color: var(--qe-text-bright);
+        box-shadow: inset 2px 0 0 var(--qe-accent);
+    }
+
+.tree-arrow {
+    width: 18px;
+    text-align: center;
+    color: var(--qe-text-dim);
+    font-size: 14px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.tree-icon {
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+    color: #dcb67a;
+    font-size: 12px;
+}
+
+.tree-row.selected .tree-icon,
+.tree-row:hover .tree-icon {
+    color: #f0c88f;
+}
+
+.tree-icon-firmware {
+    color: var(--qe-success);
+}
+
+.tree-row.selected .tree-icon-firmware,
+.tree-row:hover .tree-icon-firmware {
+    color: var(--qe-success-hover);
+}
+
+.tree-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.context-menu {
+    position: fixed;
+    background: var(--qe-bg-2);
+    border: 1px solid var(--qe-border);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px var(--qe-shadow);
+    z-index: 2000;
+    min-width: 170px;
+    padding: 4px;
+    animation: qeMenuIn .12s ease-out;
+}
+
+@keyframes qeMenuIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.context-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    font-size: 12px;
+    color: var(--qe-text);
+    cursor: pointer;
+    white-space: nowrap;
+    border-radius: 4px;
+    transition: background .1s, color .1s;
+}
+
+    .context-item .qe-ico {
+        width: 14px;
+        text-align: center;
+        color: var(--qe-accent-text);
+        font-size: 11px;
+    }
+
+    .context-item:hover {
+        background: var(--qe-hover);
+        color: var(--qe-text-bright);
+    }
+
+    .context-item.danger .qe-ico {
+        color: var(--qe-error);
+    }
+
+    .context-item.danger:hover {
+        background: rgba(244, 135, 113, 0.15);
+        color: var(--qe-error);
+    }

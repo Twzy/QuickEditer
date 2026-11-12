@@ -1,0 +1,84 @@
+﻿@* 文件路径：Components/App.razor *@
+
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
+
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem('qe.theme') || 'dark';
+                document.documentElement.dataset.theme = theme;
+            } catch (e) {
+                document.documentElement.dataset.theme = 'dark';
+            }
+        })();
+    </script>
+
+
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="QuickEditer.styles.css" />
+    <link rel="stylesheet" href="css/ide.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet />
+</head>
+
+<body>
+    <Routes />
+
+    <div id="qe-reconnect-overlay" class="qe-reconnect-overlay" style="display:none;">
+        <div class="qe-reconnect-box">
+            <i class="qe-ico qe-ico-refresh qe-reconnect-icon"></i>
+            <div class="qe-reconnect-title">连接已断开</div>
+            <div class="qe-reconnect-message" id="qe-reconnect-message">正在尝试重新连接...</div>
+            <button class="qe-btn qe-btn-primary" id="qe-reconnect-reload" style="display:none;">
+                刷新页面
+            </button>
+        </div>
+    </div>
+
+    <script src="js/reconnect.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/contextMenu.js"></script>
+    <script src="js/boardSelector.js"></script>
+    <script src="js/outputPanel.js"></script>
+    <script src="js/resizable.js"></script>
+    <script src="js/editorShortcuts.js"></script>
+    <script src="js/arduinoCompletion.js"></script>
+    <script src="js/serialMonitor.js"></script>
+    <script src="js/espFlasher.js"></script>
+    <script src="_content/BlazorMonaco/jsInterop.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/nls.messages.zh-cn.js.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js"></script>
+
+    <script>
+        document.addEventListener('contextmenu', function (e) {
+            // 放行：文件树右键菜单、Monaco 编辑器、输入框
+            if (e.target.closest('.context-menu') ||
+                e.target.closest('.tree-row') ||
+                e.target.closest('.monaco-editor') ||
+                e.target.closest('input') ||
+                e.target.closest('textarea')) {
+                return;
+            }
+            e.preventDefault();
+        });
+    </script>
+
+    <script src="_framework/blazor.web.js" autostart="false"></script>
+    <script>
+        Blazor.start({
+            circuit: {
+                reconnectionHandler: window.quickEditer.createReconnectHandler()
+            }
+        });
+    </script>
+</body>
+
+</html>

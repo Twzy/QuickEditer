@@ -1,0 +1,54 @@
+﻿.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 42px;
+    padding: 0 12px;
+    background: var(--qe-bg-3);
+    border-bottom: 1px solid var(--qe-border);
+    flex-shrink: 0;
+    user-select: none;
+}
+
+    .toolbar .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        border-radius: 5px;
+        font-size: 12px;
+        padding: 6px;
+        border: none;
+        background: transparent;
+        color: var(--qe-text);
+        cursor: pointer;
+        transition: background .15s, color .15s;
+    }
+
+        .toolbar .btn:hover:not(:disabled) {
+            background: var(--qe-hover);
+            color: var(--qe-text-bright);
+        }
+
+        .toolbar .btn:active:not(:disabled) {
+            transform: scale(0.96);
+        }
+
+        .toolbar .btn:disabled {
+            opacity: .35;
+            cursor: not-allowed;
+        }
+
+        .toolbar .btn .qe-ico {
+            font-size: 14px;
+            line-height: 1;
+        }
+
+    .toolbar .text-muted {
+        color: var(--qe-text-dimmer) !important;
+    }
+
+.mx-2 {
+    margin-left: 6px;
+    margin-right: 6px;
+}

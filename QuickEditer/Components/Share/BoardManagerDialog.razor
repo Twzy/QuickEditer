@@ -1,0 +1,574 @@
+﻿@* 文件路径：Components/Share/BoardManagerDialog.razor *@
+@using QuickEditer.Core
+@using QuickEditer.Models
+@using QuickEditer.Services
+@inject ArduinoCliService CliSvc
+@inject DialogService Dialog
+@inject IJSRuntime JS
+
+<div class="qe-manager-panel">
+    <div class="qe-manager-toolbar">
+        <button class="qe-btn qe-btn-outline-accent" @onclick="UpdateIndexAsync" disabled="@_busy" title="更新索引并刷新列表">
+            <i class="qe-ico qe-ico-refresh"></i> 更新索引并刷新
+        </button>
+        <input class="qe-input"
+               placeholder="搜索核心、维护者或开发板"
+               @bind="_filter" @bind:event="oninput" />
+    </div>
+
+    <div class="qe-manager-tabs">
+        <button class="@GetTabClass("installed")" @onclick="SwitchToInstalled">
+            <i class="qe-ico qe-ico-cright"></i>
+            已安装
+            <span class="qe-manager-tab-count">@FilteredGroups.Count</span>
+        </button>
+        <button class="@GetTabClass("available")" @onclick="SwitchToAvailable">
+            <i class="qe-ico qe-ico-download"></i>
+            可安装
+            <span class="qe-manager-tab-count">@AvailableCores.Count</span>
+        </button>
+    </div>
+
+    <div class="qe-manager-list">
+        @if (_activeTab == "installed")
+        {
+            @if (FilteredGroups.Count == 0)
+            {
+                <div class="qe-manager-empty">
+                    @(string.IsNullOrWhiteSpace(_filter) ? "暂无已安装核心，请到「可安装」标签页安装" : "没有匹配的已安装核心")
+                </div>
+            }
+            else
+            {
+                @foreach (var group in FilteredGroups)
+                {
+                    <div class="qe-card qe-card-accent-success">
+                        <div class="qe-card-header">
+                            <div class="qe-card-title">
+                                <span class="qe-card-name">@group.CoreName</span>
+                                <span class="qe-badge qe-badge-success">已安装 @group.InstalledVersion</span>
+                                @if (!string.IsNullOrEmpty(group.LatestVersion) && group.LatestVersion != group.InstalledVersion)
+                                {
+                                    <span class="qe-badge qe-badge-warning">可更新 @group.LatestVersion</span>
+                                }
+                            </div>
+                            <div class="qe-card-actions">
+                                @if (!string.IsNullOrEmpty(group.LatestVersion) && group.LatestVersion != group.InstalledVersion)
+                                {
+                                    <button class="qe-btn qe-btn-xs qe-btn-outline-accent"
+                                            @onclick="() => UpdateCoreAsync(group.CoreId, group.LatestVersion)"
+                                            disabled="@_busy"
+                                            title="更新到最新版本 @group.LatestVersion">
+                                        <i class="qe-ico qe-ico-arrow-up"></i> 更新
+                                    </button>
+                                }
+                                @if (group.Releases.Count > 0)
+                                {
+                                    <select class="qe-select qe-input-sm"
+                                            @onchange="e => SetSelectedVersion(group.CoreId, e.Value?.ToString())">
+                                        @foreach (var v in group.Releases)
+                                        {
+                                            <option value="@v" selected="@(GetSelectedVersion(group.CoreId) == v)">
+                                                @v@(v == group.InstalledVersion ? "（当前）" : "")
+                                            </option>
+                                        }
+                                    </select>
+                                    <button class="qe-btn qe-btn-xs qe-btn-outline-warning"
+                                            @onclick="() => InstallCoreAsync(group.CoreId, GetSelectedVersion(group.CoreId))"
+                                            disabled="@_busy"
+                                            title="切换版本会重新安装该核心">
+                                        切换
+                                    </button>
+                                }
+                                <button class="qe-btn qe-btn-xs qe-btn-outline-danger"
+                                        @onclick="() => UninstallCoreAsync(group.CoreId, group.InstalledVersion)"
+                                        disabled="@_busy"
+                                        title="卸载该核心">
+                                    <i class="qe-ico qe-ico-delete"></i> 卸载
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="qe-meta-grid">
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">来源</span>
+                                <span class="qe-meta-value">@group.SourceLabel</span>
+                            </div>
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">维护者</span>
+                                <span class="qe-meta-value">@(string.IsNullOrEmpty(group.Maintainer) ? "—" : group.Maintainer)</span>
+                            </div>
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">已安装版本</span>
+                                <span class="qe-meta-value">@group.InstalledVersion</span>
+                            </div>
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">最新版本</span>
+                                <span class="qe-meta-value">@(string.IsNullOrEmpty(group.LatestVersion) ? "—" : group.LatestVersion)</span>
+                            </div>
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">可用版本</span>
+                                <span class="qe-meta-value">@group.Releases.Count 个</span>
+                            </div>
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">开发板</span>
+                                <span class="qe-meta-value">@group.Boards.Count 个</span>
+                            </div>
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">核心 ID</span>
+                                <span class="qe-meta-value mono">@group.CoreId</span>
+                            </div>
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">官网</span>
+                                @if (!string.IsNullOrEmpty(group.Website))
+                                {
+                                    <a class="qe-meta-link" href="@group.Website" target="_blank" rel="noopener">@group.Website</a>
+                                }
+                                else
+                                {
+                                    <span class="qe-meta-value">—</span>
+                                }
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(group.Email))
+                        {
+                            <div class="qe-meta-item qe-meta-full">
+                                <span class="qe-meta-label">邮箱</span>
+                                <span class="qe-meta-value">@group.Email</span>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        }
+        else
+        {
+            @if (AvailableCores.Count == 0)
+            {
+                <div class="qe-manager-empty">
+                    @(string.IsNullOrWhiteSpace(_filter) ? "没有可安装的核心，请先点「更新索引并刷新」" : "没有匹配的可安装核心")
+                </div>
+            }
+            else
+            {
+                @foreach (var core in AvailableCores)
+                {
+                    <div class="qe-card qe-card-accent-info">
+                        <div class="qe-card-header">
+                            <div class="qe-card-title">
+                                <span class="qe-card-name">@core.Name</span>
+                                <span class="qe-badge qe-badge-warning mono">@core.Id</span>
+                            </div>
+                            <div class="qe-card-actions">
+                                @if (core.Releases.Count > 0)
+                                {
+                                    <select class="qe-select qe-input-sm"
+                                            @onchange="e => SetSelectedVersion(core.Id, e.Value?.ToString())">
+                                        @foreach (var v in core.Releases)
+                                        {
+                                            <option value="@v" selected="@(GetSelectedVersion(core.Id) == v)">@v</option>
+                                        }
+                                    </select>
+                                }
+                                else
+                                {
+                                    <span class="qe-meta-value mono">@core.Latest</span>
+                                }
+                                <button class="qe-btn qe-btn-xs qe-btn-outline-success"
+                                        @onclick="() => InstallCoreAsync(core.Id, GetSelectedVersion(core.Id))"
+                                        disabled="@_busy">
+                                    安装
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="qe-meta-grid">
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">来源</span>
+                                <span class="qe-meta-value">@(core.Source == "official" ? "官方索引" : "附加索引")</span>
+                            </div>
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">核心 ID</span>
+                                <span class="qe-meta-value mono">@core.Id</span>
+                            </div>
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">维护者</span>
+                                <span class="qe-meta-value">@(string.IsNullOrEmpty(core.Maintainer) ? "—" : core.Maintainer)</span>
+                            </div>
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">最新版本</span>
+                                <span class="qe-meta-value">@(string.IsNullOrEmpty(core.Latest) ? "—" : core.Latest)</span>
+                            </div>
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">可用版本</span>
+                                <span class="qe-meta-value">@core.Releases.Count 个</span>
+                            </div>
+                            <div class="qe-meta-item">
+                                <span class="qe-meta-label">官网</span>
+                                @if (!string.IsNullOrEmpty(core.Website))
+                                {
+                                    <a class="qe-meta-link" href="@core.Website" target="_blank" rel="noopener">@core.Website</a>
+                                }
+                                else
+                                {
+                                    <span class="qe-meta-value">—</span>
+                                }
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(core.Email))
+                        {
+                            <div class="qe-meta-item qe-meta-full">
+                                <span class="qe-meta-label">邮箱</span>
+                                <span class="qe-meta-value">@core.Email</span>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        }
+    </div>
+
+    @if (_busy && !string.IsNullOrEmpty(_busyText))
+    {
+        <div class="qe-manager-mask">
+            <div class="qe-manager-mask-box qe-manager-mask-log">
+                <div class="qe-manager-mask-header">
+                    <i class="qe-ico qe-ico-refresh qe-manager-mask-spin"></i>
+                    <span class="qe-manager-mask-text">@_busyText</span>
+                </div>
+                @if (_busyLogs.Count == 0)
+                {
+                    <div class="qe-manager-mask-detail">@_busyDetail</div>
+                }
+                else
+                {
+                    <div class="qe-manager-mask-log-list" @ref="_logRef">
+                        @foreach (var line in _busyLogs)
+                        {
+                            <div class="qe-manager-mask-log-line">@line</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ArduinoCoreInfo> _cores = new();
+    private List<ArduinoCoreInfo> _availableCores = new();
+    private List<ArduinoBoardInfo> _boards = new();
+    private string _filter = "";
+    private bool _busy;
+    private string _busyText = "";
+    private string _busyDetail = "";
+    private List<string> _busyLogs = new();
+    private ElementReference _logRef;
+    private int _lastLogCount;
+    private string _activeTab = "installed";
+
+    private Dictionary<string, string> _selectedVersions = new(StringComparer.OrdinalIgnoreCase);
+
+    private static List<ArduinoCoreInfo>? _cachedInstalledCores;
+    private static List<ArduinoCoreInfo>? _cachedAvailableCores;
+
+    [Parameter] public EventCallback<string> OnBoardSelected { get; set; }
+
+    private class CoreBoardGroup
+    {
+        public string CoreId { get; set; } = "";
+        public string CoreName { get; set; } = "";
+        public string InstalledVersion { get; set; } = "";
+        public string LatestVersion { get; set; } = "";
+        public string Maintainer { get; set; } = "";
+        public string Website { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string SourceLabel { get; set; } = "";
+        public List<string> Releases { get; set; } = new();
+        public List<ArduinoBoardInfo> Boards { get; set; } = new();
+    }
+
+    private List<CoreBoardGroup> FilteredGroups
+    {
+        get
+        {
+            var groups = new List<CoreBoardGroup>();
+
+            foreach (var core in _cores)
+            {
+                var group = new CoreBoardGroup
+                {
+                    CoreId = core.Id,
+                    CoreName = string.IsNullOrEmpty(core.Name) ? core.Id : core.Name,
+                    InstalledVersion = core.Installed,
+                    LatestVersion = core.Latest,
+                    Maintainer = core.Maintainer,
+                    Website = core.Website,
+                    Email = core.Email,
+                    SourceLabel = core.Source == "official" ? "官方索引" : "附加索引",
+                    Releases = core.Releases,
+                    Boards = core.Boards
+                };
+
+                if (MatchesFilterCore(core))
+                    groups.Add(group);
+            }
+
+            return groups;
+        }
+    }
+
+    private List<ArduinoCoreInfo> AvailableCores =>
+        _availableCores.Where(MatchesFilterCore).ToList();
+
+    private bool MatchesFilterCore(ArduinoCoreInfo c)
+    {
+        if (string.IsNullOrWhiteSpace(_filter)) return true;
+        return c.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase) ||
+               c.Id.Contains(_filter, StringComparison.OrdinalIgnoreCase) ||
+               c.Maintainer.Contains(_filter, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetTabClass(string tab) =>
+        tab == _activeTab ? "qe-manager-tab active" : "qe-manager-tab";
+
+    private void SwitchToInstalled() => _activeTab = "installed";
+
+    private void SwitchToAvailable() => _activeTab = "available";
+
+    private string? GetSelectedVersion(string coreId)
+    {
+        if (_selectedVersions.TryGetValue(coreId, out var v))
+            return v;
+
+        var core = _availableCores.FirstOrDefault(c => c.Id == coreId)
+                   ?? _cores.FirstOrDefault(c => c.Id == coreId);
+        var first = core?.Releases.FirstOrDefault() ?? core?.Latest;
+        if (!string.IsNullOrEmpty(first))
+            _selectedVersions[coreId] = first;
+        return first;
+    }
+
+    private void SetSelectedVersion(string coreId, string? version)
+    {
+        if (!string.IsNullOrEmpty(version))
+            _selectedVersions[coreId] = version;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_busyLogs.Count == _lastLogCount) return;
+
+        _lastLogCount = _busyLogs.Count;
+        try
+        {
+            await JS.InvokeVoidAsync("quickEditer.scrollManagerLogToBottom");
+        }
+        catch
+        {
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_cachedInstalledCores != null)
+        {
+            _cores = _cachedInstalledCores;
+            _availableCores = _cachedAvailableCores ?? new();
+            StateHasChanged();
+            return;
+        }
+
+        _busyText = "加载核心列表";
+        _busyDetail = "正在读取已安装核心和可用核心列表...";
+        _busy = true;
+        StateHasChanged();
+
+        await RefreshAsync();
+
+        _busyText = "";
+        _busyDetail = "";
+        _busy = false;
+        StateHasChanged();
+    }
+
+    private void AppendBusyLog(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line)) return;
+        _busyLogs.Add(line.TrimEnd('\r'));
+        if (_busyLogs.Count > 500)
+            _busyLogs.RemoveRange(0, _busyLogs.Count - 500);
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (_busy && _busyText == "") return;
+
+        var cores = await CliSvc.ListCoresAsync();
+        _cores = CliSvc.ParseCores(cores)
+            .Where(c => !string.IsNullOrWhiteSpace(c.Installed))
+            .ToList();
+
+        _boards = await CliSvc.GetAvailableBoardsAsync();
+
+        var search = await CliSvc.SearchCoresAsync();
+        var searchAll = CliSvc.ParseCores(search);
+        _availableCores = searchAll
+            .Where(c => !_cores.Any(ic => string.Equals(ic.Id, c.Id, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+        foreach (var installed in _cores)
+        {
+            var hit = searchAll.FirstOrDefault(c => string.Equals(c.Id, installed.Id, StringComparison.OrdinalIgnoreCase));
+            if (hit == null) continue;
+
+            installed.Releases = hit.Releases;
+            if (string.IsNullOrEmpty(installed.Maintainer)) installed.Maintainer = hit.Maintainer;
+            if (string.IsNullOrEmpty(installed.Website)) installed.Website = hit.Website;
+            if (string.IsNullOrEmpty(installed.Email)) installed.Email = hit.Email;
+            if (string.IsNullOrEmpty(installed.Latest)) installed.Latest = hit.Latest;
+        }
+
+        _selectedVersions.Clear();
+
+        _cachedInstalledCores = _cores;
+        _cachedAvailableCores = _availableCores;
+
+        StateHasChanged();
+    }
+
+    private async Task UpdateIndexAsync()
+    {
+        if (_busy) return;
+
+        _busy = true;
+        _busyText = "更新索引";
+        _busyDetail = "正在从官方和附加索引 URL 下载索引文件...";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+
+        var r = await CliSvc.UpdateIndexStreamAsync(
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }),
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }));
+
+        if (!r.Success)
+        {
+            await Dialog.AlertAsync("索引更新失败：" + r.Error);
+        }
+
+        await RefreshAsync();
+
+        _busy = false;
+        _busyText = "";
+        _busyDetail = "";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+    }
+
+    private async Task InstallCoreAsync(string coreId, string? version)
+    {
+        if (_busy) return;
+
+        _busy = true;
+        _busyText = string.IsNullOrEmpty(version) ? $"安装 {coreId}" : $"安装 {coreId}@{version}";
+        _busyDetail = "正在下载核心包和工具链，可能需要几分钟...";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+
+        var r = await CliSvc.InstallCoreStreamAsync(coreId, version,
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }),
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }));
+
+        if (r.Success)
+        {
+            _activeTab = "installed";
+        }
+        else
+        {
+            var msg = "安装失败：" + r.Error;
+            if (!string.IsNullOrEmpty(version))
+            {
+                var url = CliSvc.FindPackageUrl(coreId, version);
+                if (!string.IsNullOrEmpty(url))
+                    msg += $"\n\n可手动下载后放入 ArduinoCore/staging 重试：\n{url}";
+            }
+            await Dialog.AlertAsync(msg);
+        }
+
+        await RefreshAsync();
+
+        _busy = false;
+        _busyText = "";
+        _busyDetail = "";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+    }
+
+    private async Task UpdateCoreAsync(string coreId, string? latestVersion)
+    {
+        if (_busy || string.IsNullOrEmpty(latestVersion)) return;
+
+        _busy = true;
+        _busyText = $"更新 {coreId} → {latestVersion}";
+        _busyDetail = "正在下载新版本核心包和工具链...";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+
+        var r = await CliSvc.InstallCoreStreamAsync(coreId, latestVersion,
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }),
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }));
+
+
+        if (!r.Success)
+            await Dialog.AlertAsync("更新失败：" + r.Error);
+
+        await RefreshAsync();
+
+        _busy = false;
+        _busyText = "";
+        _busyDetail = "";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+    }
+
+    private async Task UninstallCoreAsync(string coreId, string? version)
+    {
+        if (_busy) return;
+
+        var confirm = await Dialog.ConfirmAsync(
+            $"确定卸载核心 {coreId} 吗？\n卸载后该核心下的所有开发板将不可用，项目文件不会被删除。");
+        if (!confirm) return;
+
+        _busy = true;
+        _busyText = $"卸载 {coreId}";
+        _busyDetail = "正在卸载...";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+
+        var r = await CliSvc.UninstallCoreStreamAsync(coreId,
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }),
+            line => InvokeAsync(() => { AppendBusyLog(line); StateHasChanged(); }));
+
+
+        if (!r.Success)
+            await Dialog.AlertAsync("卸载失败：" + r.Error);
+
+        await RefreshAsync();
+
+        _busy = false;
+        _busyText = "";
+        _busyDetail = "";
+        _busyLogs.Clear();
+        _lastLogCount = 0;
+        StateHasChanged();
+    }
+}

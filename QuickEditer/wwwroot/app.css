@@ -1,0 +1,875 @@
+/* 文件路径：wwwroot/app.css */
+
+
+html, body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+a, .btn-link {
+    color: #006bb7;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #1b6ec2;
+    border-color: #1861ac;
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+.content {
+    padding-top: 1.1rem;
+}
+
+h1:focus {
+    outline: none;
+}
+
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+}
+
+.invalid {
+    outline: 1px solid #e50000;
+}
+
+.validation-message {
+    color: #e50000;
+}
+
+.blazor-error-boundary {
+    background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, #b32121;
+    padding: 1rem 1rem 1rem 3.7rem;
+    color: white;
+}
+
+    .blazor-error-boundary::after {
+        content: "An error has occurred."
+    }
+
+.darker-border-checkbox.form-check-input {
+    border-color: #929292;
+}
+
+
+/* ==================== FontAwesome ==================== */
+@font-face {
+    font-family: "FontAwesome";
+    src: url("fonts/fontawesomet.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+
+.qe-ico {
+    font-family: "FontAwesome" !important;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    display: inline-block;
+    speak: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+/* 图标与文字并排时留出间距，单独图标不受影响 */
+.btn .qe-ico,
+.toolbar .qe-ico,
+.context-item .qe-ico {
+    margin-right: 4px;
+}
+
+/* ==================== 图标码位（FontAwesome） ==================== */
+.qe-ico-like::before        { content: "\f004"; }
+.qe-ico-book::before        { content: "\f02d"; }
+.qe-ico-ai::before          { content: "\f1a9"; }
+.qe-ico-key::before         { content: "\f084"; }
+.qe-ico-edit::before        { content: "\f044"; }
+.qe-ico-add::before         { content: "\f067"; }   /* 修正：加号 */
+.qe-ico-lock::before        { content: "\f023"; }
+.qe-ico-pdf::before         { content: "\f1c1"; }
+.qe-ico-delete::before      { content: "\f014"; }
+.qe-ico-more::before        { content: "\f142"; }
+.qe-ico-refresh::before     { content: "\f021"; }
+.qe-ico-setting::before     { content: "\f013"; }
+.qe-ico-bold::before        { content: "\f032"; }
+.qe-ico-italic::before      { content: "\f033"; }
+.qe-ico-strike::before      { content: "\f0cc"; }
+.qe-ico-code::before        { content: "\f121"; }
+.qe-ico-link::before        { content: "\f0c1"; }
+.qe-ico-image::before       { content: "\f03e"; }
+.qe-ico-quote::before       { content: "\f10d"; }
+.qe-ico-ul::before          { content: "\f0ca"; }
+.qe-ico-ol::before          { content: "\f0cb"; }
+.qe-ico-codeblock::before   { content: "\f120"; }
+.qe-ico-table::before       { content: "\f0ce"; }
+.qe-ico-hr::before          { content: "\f147"; }
+.qe-ico-cut::before         { content: "\f0c4"; }
+.qe-ico-copy::before        { content: "\f0c5"; }
+.qe-ico-paste::before       { content: "\f0ea"; }
+.qe-ico-undo::before        { content: "\f112"; }
+.qe-ico-redo::before        { content: "\f064"; }
+.qe-ico-save::before        { content: "\f0c7"; }
+.qe-ico-back::before        { content: "\f112"; }
+.qe-ico-folder::before      { content: "\f07b"; }
+.qe-ico-folder-open::before { content: "\f07c"; }
+.qe-ico-tag::before         { content: "\f02b"; }
+.qe-ico-password::before    { content: "\f06e"; }   /* 修正：只保留眼睛 */
+.qe-ico-password-hide::before { content: "\f070"; } /* 蒙眼 - 隐藏 */
+.qe-ico-card::before        { content: "\f09d"; }
+.qe-ico-think::before       { content: "\f069"; }
+.qe-ico-cloud::before       { content: "\f0c2"; }
+.qe-ico-warning::before     { content: "\f071"; }
+.qe-ico-power::before       { content: "\f0ec"; }
+.qe-ico-upload::before      { content: "\f287"; }
+.qe-ico-download::before    { content: "\f019"; }
+.qe-ico-attach::before      { content: "\f0c6"; }
+.qe-ico-heading::before     { content: "\f1dc"; }
+.qe-ico-wrench::before      { content: "\f1b3"; }
+.qe-ico-signout::before     { content: "\f08b"; }
+.qe-ico-tips::before        { content: "\f212"; }
+.qe-ico-tools::before       { content: "\f212"; }
+.qe-ico-file::before        { content: "\f016"; }
+.qe-ico-arrow-up::before    { content: "\f106"; }
+.qe-ico-arrow-down::before { content: "\f107"; }
+.qe-ico-search::before      { content: "\f002"; }
+.qe-ico-unlock::before      { content: "\f09c"; }
+.qe-ico-cright::before      { content: "\f00c"; }
+.qe-ico-close::before       { content: "\f00d"; }
+.qe-ico-print::before       { content: "\f02f"; }
+.qe-ico-back2::before       { content: "\f104"; }
+.qe-ico-file-code::before { content: "\f1c9"; }
+.qe-ico-file-text::before   { content: "\f15c"; }   /* file-lines / file-text */
+.qe-ico-file-data::before   { content: "\f15b"; }   /* file */
+.qe-ico-file-image::before  { content: "\f1c5"; }   /* file-image */
+.qe-ico-firmware::before    { content: "\f1b3"; }
+.qe-ico-save-all::before   { content: "\f0c7"; }   /* 临时复用 save，或用叠加实现 */
+.qe-ico-board::before      { content: "\f1cb"; }   /*代表开发板管理 */
+.qe-ico-play::before    { content: "\f04b"; }
+.qe-ico-stop::before    { content: "\f04d"; }
+.qe-ico-chart::before { content: "\f201"; }
+.qe-ico-comment::before     { content: "\f03c"; }
+.qe-ico-align-left::before  { content: "\f036"; }
+.qe-ico-replace::before  { content: "\f079"; }
+.qe-ico-clean::before  { content: "\f057"; }
+.qe-ico-selectall::before  { content: "\f00b"; }
+.qe-ico-library::before  { content: "\f187"; }
+.qe-ico-logs::before  { content: "\f108"; }
+.qe-ico-com::before  { content: "\f074"; }
+.qe-ico-options::before  { content: "\f0ad"; }
+/* ============================================================
+   公共：按钮变体
+   ============================================================ */
+.qe-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 12px;
+    line-height: 1.4;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--qe-text);
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+    font-family: inherit;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+    .qe-btn:hover:not(:disabled) {
+        background: var(--qe-hover);
+        color: var(--qe-text-bright);
+    }
+
+    .qe-btn:disabled {
+        opacity: .4;
+        cursor: not-allowed;
+    }
+
+    .qe-btn:active:not(:disabled) {
+        transform: scale(0.97);
+    }
+
+    .qe-btn .qe-ico {
+        font-size: 11px;
+    }
+
+/* 尺寸 */
+.qe-btn-sm {
+    padding: 3px 8px;
+    font-size: 11px;
+}
+
+.qe-btn-xs {
+    padding: 2px 7px;
+    font-size: 10px;
+}
+
+    .qe-btn-xs .qe-ico,
+    .qe-btn-sm .qe-ico {
+        font-size: 10px;
+    }
+
+/* 变体 */
+.qe-btn-primary {
+    background: var(--qe-accent);
+    color: #fff;
+    border-color: var(--qe-accent);
+}
+
+    .qe-btn-primary:hover:not(:disabled) {
+        background: var(--qe-accent-hover);
+        border-color: var(--qe-accent-hover);
+        color: #fff;
+    }
+
+.qe-btn-outline-accent {
+    border-color: rgba(86, 156, 214, 0.45);
+    color: var(--qe-accent-text);
+}
+
+    .qe-btn-outline-accent:hover:not(:disabled) {
+        background: rgba(86, 156, 214, 0.15);
+        color: var(--qe-accent-text-hover);
+    }
+
+.qe-btn-outline-success {
+    border-color: rgba(78, 201, 176, 0.45);
+    color: var(--qe-success);
+}
+
+    .qe-btn-outline-success:hover:not(:disabled) {
+        background: rgba(78, 201, 176, 0.15);
+        color: var(--qe-success-hover);
+    }
+
+.qe-btn-outline-warning {
+    border-color: rgba(220, 220, 170, 0.45);
+    color: var(--qe-warning);
+}
+
+    .qe-btn-outline-warning:hover:not(:disabled) {
+        background: rgba(220, 220, 170, 0.15);
+    }
+
+.qe-btn-outline-danger {
+    border-color: rgba(244, 135, 113, 0.45);
+    color: var(--qe-error);
+}
+
+    .qe-btn-outline-danger:hover:not(:disabled) {
+        background: rgba(244, 135, 113, 0.15);
+        color: var(--qe-error-hover);
+    }
+
+.qe-btn-ghost {
+    border-color: var(--qe-border);
+    color: var(--qe-text-dim);
+}
+
+    .qe-btn-ghost:hover:not(:disabled) {
+        background: var(--qe-bg-3);
+        color: var(--qe-text);
+    }
+
+/* ============================================================
+   公共：图标按钮（方形）
+   ============================================================ */
+.qe-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--qe-text-dim);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background .12s, color .12s;
+    flex-shrink: 0;
+    text-decoration: none;
+}
+
+    .qe-icon-btn:hover:not(:disabled) {
+        background: var(--qe-hover);
+        color: var(--qe-text);
+    }
+
+    .qe-icon-btn:disabled {
+        opacity: .4;
+        cursor: not-allowed;
+    }
+
+    .qe-icon-btn .qe-ico {
+        font-size: 11px;
+    }
+
+.qe-icon-btn-sm {
+    width: 20px;
+    height: 20px;
+}
+
+    .qe-icon-btn-sm .qe-ico {
+        font-size: 10px;
+    }
+
+/* ============================================================
+   公共：输入框 / 下拉 / 文本域
+   ============================================================ */
+.qe-input,
+.qe-select,
+.qe-textarea {
+    background: var(--qe-bg);
+    border: 1px solid var(--qe-border);
+    color: var(--qe-text);
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+    .qe-input:focus,
+    .qe-select:focus,
+    .qe-textarea:focus {
+        border-color: var(--qe-accent);
+        box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.18);
+    }
+
+    .qe-input::placeholder,
+    .qe-textarea::placeholder {
+        color: var(--qe-text-dimmer);
+    }
+
+.qe-input-sm,
+.qe-select-sm {
+    padding: 4px 8px;
+    font-size: 11px;
+}
+
+.qe-textarea {
+    resize: vertical;
+    line-height: 1.6;
+}
+
+/* ============================================================
+   公共：卡片
+   ============================================================ */
+.qe-card {
+    background: var(--qe-bg);
+    border: 1px solid var(--qe-border);
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.qe-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--qe-bg-2);
+    border-bottom: 1px solid var(--qe-border);
+    flex-wrap: wrap;
+}
+
+.qe-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.qe-card-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--qe-text-bright);
+}
+
+.qe-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.qe-card-body {
+    padding: 10px 12px;
+}
+
+/* 左侧色条 */
+.qe-card-accent-success {
+    border-left: 3px solid var(--qe-success);
+}
+
+.qe-card-accent-info {
+    border-left: 3px solid var(--qe-accent-text);
+}
+
+/* ============================================================
+   公共：徽标
+   ============================================================ */
+.qe-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 10px;
+    line-height: 17px;
+    white-space: nowrap;
+}
+
+.qe-badge-success {
+    color: var(--qe-success);
+    background: rgba(78, 201, 176, 0.15);
+    border: 1px solid rgba(78, 201, 176, 0.35);
+}
+
+.qe-badge-warning {
+    color: var(--qe-warning);
+    background: rgba(220, 220, 170, 0.12);
+    border: 1px solid rgba(220, 220, 170, 0.3);
+}
+
+.qe-badge-dim {
+    color: var(--qe-text-dim);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--qe-border);
+}
+
+.qe-badge.mono {
+    font-family: var(--qe-mono);
+    font-weight: 500;
+}
+
+/* ============================================================
+   公共：元信息网格
+   ============================================================ */
+.qe-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 16px;
+    padding: 10px 12px;
+}
+
+.qe-meta-item {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 11px;
+    min-width: 0;
+}
+
+.qe-meta-full {
+    padding: 0 12px 10px;
+}
+
+.qe-meta-label {
+    color: var(--qe-text-dim);
+    flex-shrink: 0;
+    min-width: 64px;
+}
+
+.qe-meta-value {
+    color: var(--qe-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+    .qe-meta-value.mono {
+        font-family: var(--qe-mono);
+        font-size: 11px;
+        color: var(--qe-accent-text);
+    }
+
+.qe-meta-link {
+    color: var(--qe-accent-text);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+    .qe-meta-link:hover {
+        text-decoration: underline;
+        color: var(--qe-accent-text-hover);
+    }
+
+/* ============================================================
+   公共：滚动条
+   ============================================================ */
+.qe-scroll {
+    overflow-y: auto;
+}
+
+    .qe-scroll::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .qe-scroll::-webkit-scrollbar-thumb {
+        background: var(--qe-border);
+        border-radius: 3px;
+    }
+
+        .qe-scroll::-webkit-scrollbar-thumb:hover {
+            background: var(--qe-text-dimmer);
+        }
+
+/* ============================================================
+   公共：管理器面板（BoardManager / LibraryManager 共用）
+   ============================================================ */
+.qe-manager-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 760px;
+    max-width: 100%;
+    height: 680px;
+    min-height: 680px;
+    max-height: 680px;
+    overflow: hidden;
+}
+
+.qe-manager-toolbar {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+}
+
+    .qe-manager-toolbar .qe-input-sm {
+        flex: 1;
+        min-width: 0;
+    }
+
+.qe-manager-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--qe-bg);
+    border: 1px solid var(--qe-border);
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.qe-manager-tab {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: var(--qe-text-dim);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    font-family: inherit;
+}
+
+    .qe-manager-tab:hover {
+        background: var(--qe-bg-3);
+        color: var(--qe-text);
+    }
+
+    .qe-manager-tab.active {
+        background: var(--qe-bg-3);
+        color: var(--qe-text-bright);
+        box-shadow: inset 0 0 0 1px var(--qe-border);
+    }
+
+.qe-manager-tab-count {
+    padding: 0 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--qe-text-dim);
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    line-height: 16px;
+}
+
+.qe-manager-tab.active .qe-manager-tab-count {
+    color: var(--qe-accent-text);
+    background: rgba(86, 156, 214, 0.15);
+}
+
+.qe-manager-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 4px;
+}
+
+    .qe-manager-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .qe-manager-list::-webkit-scrollbar-thumb {
+        background: var(--qe-border);
+        border-radius: 3px;
+    }
+
+.qe-manager-empty {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--qe-text-dimmer);
+    font-size: 12px;
+}
+
+/* ============================================================
+   公共：操作日志（BoardManager / LibraryManager 共用）
+   ============================================================ */
+.qe-log-box {
+    flex-shrink: 0;
+    border-top: 1px solid var(--qe-border);
+    background: var(--qe-bg-2);
+    display: flex;
+    flex-direction: column;
+    max-height: 220px;
+    border-radius: 0 0 6px 6px;
+    overflow: hidden;
+}
+
+.qe-log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    background: var(--qe-bg-3);
+    border-bottom: 1px solid var(--qe-border);
+    flex-shrink: 0;
+}
+
+.qe-log-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--qe-text-dim);
+}
+
+.qe-log-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.qe-log-count {
+    font-size: 11px;
+    color: var(--qe-text-dim);
+}
+
+.qe-log-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+    .qe-log-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .qe-log-list::-webkit-scrollbar-thumb {
+        background: var(--qe-border);
+        border-radius: 3px;
+    }
+
+.qe-log-empty {
+    padding: 12px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--qe-text-dimmer);
+}
+
+.qe-log-item {
+    padding: 8px 10px;
+    border-radius: 5px;
+    border-left: 3px solid var(--qe-border);
+    background: var(--qe-bg);
+    font-size: 11px;
+}
+
+    .qe-log-item.success {
+        border-left-color: var(--qe-success);
+    }
+
+    .qe-log-item.error {
+        border-left-color: var(--qe-error);
+    }
+
+    .qe-log-item.running {
+        border-left-color: var(--qe-accent-text);
+        background: rgba(86, 156, 214, 0.08);
+    }
+
+        .qe-log-item.running .qe-log-status {
+            color: var(--qe-accent-text);
+        }
+
+.qe-log-spinner {
+    display: inline-block;
+    animation: qeSpin 1s linear infinite;
+    font-size: 14px;
+    line-height: 1;
+}
+
+@keyframes qeSpin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.qe-log-item-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.qe-log-time {
+    color: var(--qe-text-dimmer);
+    font-family: var(--qe-mono);
+    font-size: 10px;
+}
+
+.qe-log-status {
+    font-weight: 700;
+}
+
+.qe-log-item.success .qe-log-status {
+    color: var(--qe-success);
+}
+
+.qe-log-item.error .qe-log-status {
+    color: var(--qe-error);
+}
+
+.qe-log-core {
+    color: var(--qe-accent-text);
+    font-family: var(--qe-mono);
+    font-size: 11px;
+}
+
+.qe-log-stage {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: rgba(86, 156, 214, 0.15);
+    color: var(--qe-accent-text);
+    border: 1px solid rgba(86, 156, 214, 0.3);
+    flex-shrink: 0;
+}
+
+.qe-log-message {
+    color: var(--qe-text);
+    line-height: 1.5;
+}
+
+.qe-log-raw {
+    margin: 6px 0 0;
+    padding: 6px 8px;
+    background: var(--qe-bg);
+    border: 1px solid var(--qe-border);
+    border-radius: 4px;
+    color: var(--qe-error);
+    font-family: var(--qe-mono);
+    font-size: 10px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.qe-log-url {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.qe-log-url-label {
+    color: var(--qe-text-dim);
+    flex-shrink: 0;
+}
+
+.qe-log-url a {
+    color: var(--qe-accent-text);
+    text-decoration: none;
+    word-break: break-all;
+    font-size: 10px;
+}
+
+    .qe-log-url a:hover {
+        text-decoration: underline;
+    }
+
+.qe-log-hint {
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--qe-text-dim);
+    font-style: italic;
+}
+
+.qe-ico-save-all {
+    position: relative;
+    bottom:1px;
+}
+    .qe-ico-save-all::after {
+        content: "\f0c7";
+        position: absolute;
+        left: -3px;
+        bottom: -3px;
+        line-height: 1;
+        color: inherit;
+        background-color: var(--qe-bg);
+    }
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+
+select.qe-select {
+    color-scheme: dark;
+}
+
+html[data-theme="light"] select.qe-select {
+    color-scheme: light;
+}

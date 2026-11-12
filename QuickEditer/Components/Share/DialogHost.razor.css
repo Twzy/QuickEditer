@@ -1,0 +1,28 @@
+﻿.global-dialog-message {
+    font-size: 13px;
+    color: var(--qe-text);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.settings-group {
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--qe-border);
+}
+
+    .settings-group:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+.settings-group-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--qe-accent-text);
+    margin-bottom: 10px;
+}

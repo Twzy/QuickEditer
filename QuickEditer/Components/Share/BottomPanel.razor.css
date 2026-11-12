@@ -1,0 +1,108 @@
+﻿.bottom-panel {
+    display: flex;
+    flex-direction: column;
+    height: 220px;
+    min-height: 120px;
+    background: var(--qe-bg);
+    border-top: 1px solid var(--qe-border);
+    flex-shrink: 0;
+    transition: height .15s ease;
+}
+
+    .bottom-panel.collapsed {
+        height: 32px;
+        min-height: 32px;
+        flex: 0 0 32px;
+    }
+
+.bottom-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 32px;
+    background: var(--qe-bg-2);
+    border-bottom: 1px solid var(--qe-border);
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.bottom-tabs {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+    overflow-x: auto;
+}
+
+    .bottom-tabs::-webkit-scrollbar {
+        height: 3px;
+    }
+
+    .bottom-tabs::-webkit-scrollbar-thumb {
+        background: var(--qe-border);
+        border-radius: 2px;
+    }
+
+.bottom-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px 0 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--qe-text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+}
+
+    .bottom-tab:hover {
+        color: var(--qe-text);
+    }
+
+    .bottom-tab.active {
+        color: var(--qe-text);
+        border-bottom-color: var(--qe-accent);
+    }
+
+    .bottom-tab .qe-ico {
+        font-size: 11px;
+    }
+
+.bottom-tab-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    color: var(--qe-text-dimmer);
+    margin-left: 2px;
+    transition: background .12s, color .12s;
+}
+
+    .bottom-tab-close:hover {
+        background: rgba(244, 135, 113, 0.2);
+        color: var(--qe-error);
+    }
+
+    .bottom-tab-close .qe-ico {
+        font-size: 9px;
+    }
+
+.bottom-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-right: 8px;
+    flex-shrink: 0;
+}
+
+.bottom-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}

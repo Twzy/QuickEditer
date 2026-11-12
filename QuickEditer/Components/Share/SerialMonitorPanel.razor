@@ -1,0 +1,162 @@
+﻿@* 文件路径：Components/Share/SerialMonitorPanel.razor *@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="serial-content">
+    <div class="serial-toolbar">
+        <select class="qe-select qe-input-sm" @bind="_baudRate">
+            @foreach (var b in BaudRates)
+            {
+                <option value="@b">@b</option>
+            }
+        </select>
+
+        <button class="qe-btn qe-btn-sm qe-btn-outline-success" @onclick="ConnectAsync" disabled="@_connected">
+            <i class="qe-ico qe-ico-power"></i> 连接
+        </button>
+        <button class="qe-btn qe-btn-sm qe-btn-outline-danger" @onclick="DisconnectAsync" disabled="@(!_connected)">
+            <i class="qe-ico qe-ico-close"></i> 断开
+        </button>
+
+        <span class="serial-sep">|</span>
+
+        <button class="qe-btn qe-btn-sm @(_numericMode ? "qe-btn-outline-accent" : "")" @onclick="ToggleMode">
+            <i class="qe-ico qe-ico-chart"></i> @(_numericMode ? "数字模式" : "文本模式")
+        </button>
+        <button class="qe-btn qe-btn-sm qe-btn-ghost" @onclick="ClearAsync">
+            <i class="qe-ico qe-ico-delete"></i> 清空
+        </button>
+    </div>
+
+    @if (_numericMode)
+    {
+        <div class="serial-chart-wrapper">
+            <canvas @ref="_canvasRef" class="serial-chart"></canvas>
+        </div>
+    }
+    else
+    {
+        <div class="serial-output">
+            @foreach (var line in _lines)
+            {
+                <div class="serial-line">@line</div>
+            }
+        </div>
+    }
+
+    <div class="serial-send">
+        <input class="qe-input qe-input-sm"
+               placeholder="输入要发送的内容"
+               @bind="_sendText"
+               @bind:event="oninput"
+               @onkeydown="OnSendKeyDown" />
+        <button class="qe-btn qe-btn-sm qe-btn-outline-accent" @onclick="SendAsync" disabled="@(!_connected)">
+            <i class="qe-ico qe-ico-upload"></i> 发送
+        </button>
+        <label class="serial-newline">
+            <input type="checkbox" @bind="_appendNewline" />
+            换行
+        </label>
+    </div>
+</div>
+
+@code {
+    private static readonly int[] BaudRates = { 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600 };
+    private int _baudRate = 115200;
+    private bool _connected;
+    private bool _numericMode;
+    private List<string> _lines = new();
+    private ElementReference _canvasRef;
+    private DotNetObjectReference<SerialMonitorPanel>? _selfRef;
+    private string _sendText = "";
+    private bool _appendNewline = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("quickEditer.serialMonitor.bindDotNet", _selfRef);
+
+            var connected = await JS.InvokeAsync<bool>("quickEditer.serialMonitor.isConnected");
+            if (connected)
+            {
+                _connected = true;
+                StateHasChanged();
+            }
+        }
+
+        if (_numericMode && _canvasRef.Context != null)
+        {
+            await JS.InvokeVoidAsync("quickEditer.serialMonitor.setChartCanvas", _canvasRef);
+        }
+    }
+
+    [JSInvokable]
+    public void OnSerialStatus(bool connected, string portName)
+    {
+        _connected = connected;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnSerialLine(string line)
+    {
+        _lines.Add(line);
+        if (_lines.Count > 1000)
+            _lines.RemoveRange(0, _lines.Count - 1000);
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnSerialLog(string text, bool isError)
+    {
+        _lines.Add(isError ? $"[错误] {text}" : $"[系统] {text}");
+        StateHasChanged();
+    }
+
+    private async Task ConnectAsync()
+    {
+        await JS.InvokeVoidAsync("quickEditer.serialMonitor.connect", _baudRate);
+    }
+
+    private async Task DisconnectAsync()
+    {
+        await JS.InvokeVoidAsync("quickEditer.serialMonitor.disconnect");
+    }
+
+    private async Task ClearAsync()
+    {
+        _lines.Clear();
+        await JS.InvokeVoidAsync("quickEditer.serialMonitor.clear");
+        StateHasChanged();
+    }
+
+    private async Task ToggleMode()
+    {
+        _numericMode = !_numericMode;
+        await JS.InvokeVoidAsync("quickEditer.serialMonitor.setMode", _numericMode);
+        StateHasChanged();
+    }
+
+    private async Task SendAsync()
+    {
+        if (string.IsNullOrEmpty(_sendText)) return;
+        await JS.InvokeVoidAsync("quickEditer.serialMonitor.send", _sendText, _appendNewline);
+        _sendText = "";
+    }
+
+    private async Task OnSendKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await SendAsync();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _selfRef?.Dispose();
+        await Task.CompletedTask;
+    }
+}

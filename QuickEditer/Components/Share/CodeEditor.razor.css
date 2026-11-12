@@ -1,0 +1,10 @@
+﻿/* 文件路径：Components/Share/CodeEditor.razor.css */
+
+.code-editor-host {
+    position: absolute;
+    inset: 0;
+}
+
+    .code-editor-host.readonly .monaco-editor .inputarea {
+        caret-color: transparent;
+    }

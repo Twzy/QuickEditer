@@ -1,0 +1,144 @@
+﻿@* 文件路径：Components/Share/MainToolbar.razor *@
+
+
+@using QuickEditer.Models
+@inject ArduinoCliService CliSvc
+@inject IJSRuntime JS
+
+
+<div class="toolbar">
+    <button class="btn btn-sm" @onclick="OnNewProject" title="新建项目">
+        <i class="qe-ico qe-ico-add"></i>
+    </button>
+
+    <button class="btn btn-sm" @onclick="OnOpenProject" title="打开项目">
+        <i class="qe-ico qe-ico-folder-open"></i>
+    </button>
+
+    <button class="btn btn-sm" @onclick="OnSave" title="保存">
+        <i class="qe-ico qe-ico-save"></i>
+    </button>
+
+    <button class="btn btn-sm" @onclick="OnSaveAll" title="保存全部">
+        <i class="qe-ico qe-ico-save-all"></i>
+    </button>
+
+    <span class="text-muted mx-2">|</span>
+
+    <button class="btn btn-sm" @onclick="OnUndo" title="撤销">
+        <i class="qe-ico qe-ico-undo"></i>
+    </button>
+
+    <button class="btn btn-sm" @onclick="OnRedo" title="重做">
+        <i class="qe-ico qe-ico-redo"></i>
+    </button>
+
+    <button class="btn btn-sm" @onclick="OnCut" title="剪切">
+        <i class="qe-ico qe-ico-cut"></i>
+    </button>
+
+    <button class="btn btn-sm" @onclick="OnCopy" title="复制">
+        <i class="qe-ico qe-ico-copy"></i>
+    </button>
+
+    <button class="btn btn-sm" @onclick="OnPaste" title="粘贴">
+        <i class="qe-ico qe-ico-paste"></i>
+    </button>
+
+
+    <button class="btn btn-sm" @onclick="OnFind" title="查找">
+        <i class="qe-ico qe-ico-search"></i>
+    </button>
+
+    <button class="btn btn-sm" @onclick="OnReplace" title="替换">
+        <i class="qe-ico qe-ico-replace"></i>
+    </button>
+
+
+    <button class="btn btn-sm" @onclick="OnToggleComment" title="注释/取消注释">
+        <i class="qe-ico qe-ico-comment"></i>
+    </button>
+
+
+
+    <span class="text-muted mx-2">|</span>
+
+    <BoardSelector CurrentFqbn="@CurrentFqbn" OnSelected="HandleBoardSelected" />
+
+    <button class="btn btn-sm" @onclick="OnBoardConfig" title="开发板配置" disabled="@(string.IsNullOrEmpty(CurrentFqbn))">
+        <i class="qe-ico qe-ico-options"></i>
+    </button>
+
+
+    <button class="btn btn-sm btn-compile" @onclick="OnCompile" disabled="@(!CanCompile)" title="编译">
+        <i class="qe-ico qe-ico-play"></i>
+    </button>
+
+    <button class="btn btn-sm" @onclick="OnCancelCompile" disabled="@(!IsCompiling)" title="取消编译">
+        <i class="qe-ico qe-ico-stop"></i>
+    </button>
+
+    <button class="btn btn-sm" @onclick="OnFlash" title="在线烧录">
+        <i class="qe-ico qe-ico-upload"></i>
+    </button>
+
+    <span class="text-muted mx-2">|</span>
+    <button class="btn btn-sm" @onclick="OnToggleOutput" title="输出">
+        <i class="qe-ico qe-ico-logs"></i>
+    </button>
+
+    <button class="btn btn-sm" @onclick="OnToggleSerial" title="串口监视器">
+        <i class="qe-ico qe-ico-com"></i>
+    </button>
+
+    <span class="text-muted mx-2">|</span>
+
+    <button class="btn btn-sm" @onclick="OnManageBoards" title="开发板管理">
+        <i class="qe-ico qe-ico-board"></i>
+    </button>
+
+    <button class="btn btn-sm" @onclick="OnManageLibraries" title="库管理">
+        <i class="qe-ico qe-ico-library"></i>
+    </button>
+
+    <button class="btn btn-sm" @onclick="OnSettings" title="设置">
+        <i class="qe-ico qe-ico-setting"></i>
+    </button>
+
+</div>
+
+@code {
+    [Parameter] public bool CanCompile { get; set; }
+    [Parameter] public string? CurrentFqbn { get; set; }
+
+    [Parameter] public EventCallback OnNewProject { get; set; }
+    [Parameter] public EventCallback OnOpenProject { get; set; }
+    [Parameter] public EventCallback OnCompile { get; set; }
+    [Parameter] public EventCallback OnBoardConfig { get; set; }
+    [Parameter] public EventCallback OnManageBoards { get; set; }
+    [Parameter] public EventCallback OnManageLibraries { get; set; }
+    [Parameter] public EventCallback OnSettings { get; set; }
+    [Parameter] public EventCallback OnToggleOutput { get; set; }
+    [Parameter] public EventCallback OnUndo { get; set; }
+    [Parameter] public EventCallback OnRedo { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnSaveAll { get; set; }
+    [Parameter] public EventCallback OnCut { get; set; }
+    [Parameter] public EventCallback OnCopy { get; set; }
+    [Parameter] public EventCallback OnPaste { get; set; }
+    [Parameter] public EventCallback<string> OnBoardSelected { get; set; }
+    [Parameter] public EventCallback OnToggleSerial { get; set; }
+    [Parameter] public bool IsCompiling { get; set; }
+    [Parameter] public EventCallback OnCancelCompile { get; set; }
+    [Parameter] public EventCallback OnFind { get; set; }
+    [Parameter] public EventCallback OnReplace { get; set; }
+    [Parameter] public EventCallback OnToggleComment { get; set; }
+    [Parameter] public EventCallback OnFlash { get; set; }
+
+
+    private async Task HandleBoardSelected(string fqbn)
+    {
+        if (OnBoardSelected.HasDelegate)
+            await OnBoardSelected.InvokeAsync(fqbn);
+    }
+}

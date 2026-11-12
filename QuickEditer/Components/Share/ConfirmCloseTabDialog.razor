@@ -1,0 +1,11 @@
+﻿@* 文件路径：Components/Share/ConfirmCloseTabDialog.razor *@
+
+<div class="confirm-close">
+    <div class="confirm-close-text">
+        「@FileName」有未保存的更改，是否保存？
+    </div>
+</div>
+
+@code {
+    [Parameter] public string FileName { get; set; } = "";
+}

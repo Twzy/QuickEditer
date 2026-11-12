@@ -1,0 +1,93 @@
+﻿/* 文件路径：Components/Share/BoardConfigDialog.razor.css */
+
+.board-config-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 820px;
+    height: 560px;
+    max-width: 100%;
+}
+
+.board-config-header {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--qe-border);
+    flex-shrink: 0;
+}
+
+.board-config-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--qe-text-bright);
+}
+
+.board-config-loading,
+.board-config-empty {
+    padding: 24px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--qe-text-dimmer);
+}
+
+.board-config-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-shrink: 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--qe-border);
+}
+
+.board-config-count {
+    font-size: 11px;
+    color: var(--qe-text-dimmer);
+}
+
+.board-config-list {
+    flex: 1;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 16px;
+    padding-right: 4px;
+    align-content: start;
+}
+
+    .board-config-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .board-config-list::-webkit-scrollbar-thumb {
+        background: var(--qe-border);
+        border-radius: 3px;
+    }
+
+.board-config-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+
+.board-config-row-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.board-config-label {
+    font-size: 12px;
+    color: var(--qe-accent-text);
+}
+.board-config-hint {
+    padding-top: 8px;
+    border-top: 1px solid var(--qe-border);
+    font-size: 11px;
+    color: var(--qe-text-dimmer);
+    line-height: 1.6;
+    flex-shrink: 0;
+}

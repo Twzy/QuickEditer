@@ -1,0 +1,59 @@
+﻿@* 文件路径：Components/Share/AboutDialog.razor *@
+@using QuickEditer.Core
+
+<div class="about-panel">
+    <div class="about-logo">
+        <img src="images/qeicon.png" alt="QuickEditer" class="about-logo-img" />
+        <div class="about-title">QuickEditer</div>
+        <div class="about-version">@Config.AppVersion</div>
+    </div>
+
+    <div class="about-desc">
+        基于 Blazor 的 Arduino Web IDE，支持项目管理、代码编辑、编译、固件合并与浏览器端在线烧录。
+    </div>
+
+    <div class="about-info">
+        <div class="about-info-item">
+            <span class="about-info-label">软件名称</span>
+            <span class="about-info-value">墨云软件 · QuickEditer</span>
+        </div>
+        <div class="about-info-item">
+            <span class="about-info-label">运行平台</span>
+            <span class="about-info-value">@Environment.OSVersion</span>
+        </div>
+        <div class="about-info-item">
+            <span class="about-info-label">arduino-cli</span>
+            <span class="about-info-value mono">@_cliVersion</span>
+        </div>
+    </div>
+</div>
+
+@inject ArduinoCliService CliSvc
+
+@code {
+    private string _cliVersion = "未检测到";
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var r = await CliSvc.GetCliVersionAsync();
+            if (r.Success && !string.IsNullOrWhiteSpace(r.Output))
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(r.Output);
+                if (doc.RootElement.TryGetProperty("VersionString", out var v))
+                    _cliVersion = v.GetString() ?? "未知";
+                else if (doc.RootElement.TryGetProperty("version", out var v2))
+                    _cliVersion = v2.GetString() ?? "未知";
+                else
+                    _cliVersion = r.Output.Trim();
+            }
+        }
+        catch
+        {
+            _cliVersion = "未检测到";
+        }
+    }
+}

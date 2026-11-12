@@ -1,0 +1,116 @@
+﻿@* 文件路径：Components/Share/BoardConfigDialog.razor *@
+
+@using QuickEditer.Models
+@using QuickEditer.Services
+@inject ArduinoCliService CliSvc
+
+<div class="board-config-panel">
+    <div class="board-config-header">
+        <div class="board-config-title">@BoardLabel</div>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="board-config-loading">加载配置项...</div>
+    }
+    else if (_items.Count == 0)
+    {
+        <div class="board-config-empty">该开发板没有可配置项</div>
+    }
+    else
+    {
+        <div class="board-config-list">
+            @foreach (var item in _items)
+            {
+                <div class="board-config-row">
+                    <div class="board-config-row-head">
+                        <label class="board-config-label">@item.Label</label>
+                        @if (GetValue(item.Key) == item.DefaultValue)
+                        {
+                            <span class="board-config-badge">默认</span>
+                        }
+                    </div>
+                    <select class="form-control"
+                            value="@GetValue(item.Key)"
+                            @onchange="e => SetValue(item.Key, e.Value?.ToString())">
+                        @foreach (var opt in item.Options)
+                        {
+                            <option value="@opt.Value" selected="@(GetValue(item.Key) == opt.Value)">
+                                @opt.Label
+                            </option>
+                        }
+                    </select>
+                </div>
+            }
+        </div>
+
+        <div class="board-config-toolbar">
+            <button class="btn btn-xs btn-outline-info" @onclick="ResetToDefaults" disabled="@_loading">
+                <i class="qe-ico qe-ico-refresh"></i> 重置为默认
+            </button>
+            <span class="board-config-count">@_items.Count 项可配置</span>
+        </div>
+    }
+    <div class="board-config-hint">
+        部分配置项（如上传速度、烧录模式等）仅影响本地工具烧录，不适用于浏览器在线烧录，在线烧录由 Web Serial 与 esptool 控制。
+    </div>
+</div>
+
+@code {
+    private bool _loading;
+    private List<BoardConfigItem> _items = new();
+    private Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
+
+    [Parameter] public string Fqbn { get; set; } = "";
+    [Parameter] public string BoardLabel { get; set; } = "";
+    [Parameter] public Dictionary<string, string> CurrentValues { get; set; } = new();
+
+    /// <summary>保存时回调，父组件写回项目或全局配置</summary>
+    [Parameter] public EventCallback<Dictionary<string, string>> OnSave { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _values = CurrentValues != null
+            ? new Dictionary<string, string>(CurrentValues, StringComparer.OrdinalIgnoreCase)
+            : new(StringComparer.OrdinalIgnoreCase);
+
+        if (string.IsNullOrEmpty(Fqbn)) return;
+
+        _loading = true;
+        var r = await CliSvc.GetBoardDetailsAsync(Fqbn);
+        _items = CliSvc.ParseBoardConfigOptions(r);
+        _loading = false;
+    }
+
+    private string GetValue(string key) =>
+        _values.TryGetValue(key, out var v) && !string.IsNullOrEmpty(v)
+            ? v
+            : _items.FirstOrDefault(i => i.Key == key)?.DefaultValue ?? "";
+
+    private void SetValue(string key, string? value)
+    {
+        _values[key] = value ?? "";
+    }
+
+    private void ResetToDefaults()
+    {
+        _values.Clear();
+        foreach (var item in _items)
+            _values[item.Key] = item.DefaultValue;
+    }
+
+    /// <summary>供父组件调用：提交配置</summary>
+    public async Task SubmitAsync()
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in _items)
+        {
+            var v = GetValue(item.Key);
+            if (!string.IsNullOrEmpty(v))
+                result[item.Key] = v;
+        }
+
+        if (OnSave.HasDelegate)
+            await OnSave.InvokeAsync(result);
+    }
+}

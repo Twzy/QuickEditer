@@ -1,0 +1,9 @@
+﻿.confirm-close {
+    padding: 8px 0;
+}
+
+.confirm-close-text {
+    font-size: 13px;
+    color: var(--qe-text);
+    line-height: 1.6;
+}

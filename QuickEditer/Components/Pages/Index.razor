@@ -1,0 +1,225 @@
+﻿@* 文件路径：Components/Pages/Index.razor *@
+
+@page "/"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using QuickEditer.Core
+@using QuickEditer.Models
+
+<div class="title-bar">
+    <div class="title-bar-left">
+        <img src="images/qeicon.png" alt="QuickEditer" class="title-bar-logo" />
+        <div class="title-bar-title-group">
+            <span class="title-bar-app">QuickEditer</span>
+            <span class="title-bar-version">@Config.AppVersion</span>
+        </div>
+    </div>
+    <div class="title-bar-center">
+        @if (_currentConfig != null)
+        {
+            <span class="title-bar-project">@_currentConfig.Name</span>
+        }
+        else
+        {
+            <span class="title-bar-project title-bar-project-empty">未打开项目</span>
+        }
+    </div>
+    <div class="title-bar-right">
+        <span class="title-bar-fqbn">墨云软件</span>
+        <button class="title-bar-btn" title="退出登录" @onclick="LogoutAsync">
+            <i class="qe-ico qe-ico-signout"></i>
+        </button>
+    </div>
+</div>
+
+<div class="ide-container">
+    <MenuBar RecentProjects="Config.Cfg.RecentProjects"
+             ExampleSources="_exampleSources"
+             OnNewProject="OpenNewProjectDialog"
+             OnOpenProject="() => _showOpenDialog = true"
+             OnNewFile="NewFile"
+             OnSave="SaveActiveTab"
+             OnSaveAll="SaveAllTabs"
+             OnUndo="UndoAsync"
+             OnRedo="RedoAsync"
+             OnCut="CutAsync"
+             OnCopy="CopyAsync"
+             OnPaste="PasteAsync"
+             OnSelectAll="SelectAllAsync"
+             OnFind="FindAsync"
+             OnReplace="ReplaceAsync"
+             OnGlobalSearch="() => _showGlobalSearch = true"
+             OnToggleOutput="ToggleOutput"
+             OnToggleSerial="ToggleSerial"
+             OnCompile="CompileAsync"
+             OnCancelCompile="CancelCompile"
+             OnCleanBuild="CleanBuildAsync"
+             OnCleanLogs="CleanLogsAsync"
+             OnExportProject="ExportProject"
+             OnProjectSettings="OpenProjectSettings"
+             OnRecentProjectSelected="LoadProjectAsync"
+             OnShowShortcuts="() => _showShortcuts = true"
+             OnOpenExampleSource="OnOpenExampleSource"
+             OnFlash="() => _showFlash = true"
+             OnLogout="LogoutAsync"
+             OnChangePassword="() => _showChangePassword = true"
+             OnShowHelp="OpenHelp"
+             OnShowAbout="() => _showAbout = true"
+             OnDonate="() => _showDonate = true" />
+
+    <MainToolbar CanCompile="@(_currentConfig != null)"
+                 CurrentFqbn="@(_currentConfig?.BoardFqbn ?? "")"
+                 IsCompiling="_compileCts != null"
+                 OnNewProject="OpenNewProjectDialog"
+                 OnOpenProject="() => _showOpenDialog = true"
+                 OnCompile="CompileAsync"
+                 OnCancelCompile="CancelCompile"
+                 OnBoardConfig="OpenBoardConfig"
+                 OnManageBoards="() => _showBoardDialog = true"
+                 OnManageLibraries="() => _showLibDialog = true"
+                 OnSettings="OpenSettings"
+                 OnBoardSelected="OnBoardSelected"
+                 OnToggleOutput="ToggleOutput"
+                 OnToggleSerial="ToggleSerial"
+                 OnUndo="UndoAsync"
+                 OnRedo="RedoAsync"
+                 OnSave="SaveActiveTab"
+                 OnSaveAll="SaveAllTabs"
+                 OnCut="CutAsync"
+                 OnCopy="CopyAsync"
+                 OnPaste="PasteAsync"
+                 OnFind="FindAsync"
+                 OnReplace="ReplaceAsync"
+                 OnToggleComment="ToggleCommentAsync"
+                 OnFlash="() => _showFlash = true" />
+
+    <div class="main-area">
+        <div class="project-sidebar">
+            <ProjectExplorer Root="@_projectTree"
+                             SelectedPath="@_selectedPath"
+                             OnSelect="OnTreeSelect"
+                             OnContextMenu="OnTreeContextMenu"
+                             OnRenameRequest="OnRenameRequest"
+                             OnRefresh="RefreshTree"
+                             OnMoveRequest="OnMoveRequest" />
+        </div>
+
+        <div class="splitter splitter-vertical" title="拖动调整宽度"></div>
+
+        <div class="editor-and-output">
+            @if (!string.IsNullOrEmpty(_nonTextFilePath))
+            {
+                <div class="editor-area">
+                    <div class="editor-tabs"></div>
+                    <div class="editor-content">
+                        <FilePreviewPanel FilePath="@_nonTextFilePath" />
+                    </div>
+                </div>
+            }
+            else
+            {
+                <EditorPanel @ref="_editorPanel"
+                             Tabs="_tabs"
+                             ActivePath="@_activeTabPath"
+                             CurrentContent="@_currentContent"
+                             OnActivate="SwitchTab"
+                             OnClose="CloseTab"
+                             OnContentChanged="OnEditorChanged"
+                             OnSaveRequested="SaveActiveTab"
+                             OnCloseOthers="CloseOtherTabs"
+                             OnCloseAll="CloseAllTabs"
+                             OnTabDragStart="p => _draggingTabPath = p"
+                             OnTabDrop="OnTabDrop"
+                             OnCursorPositionChanged="OnCursorPositionChanged"
+                             Theme="@Config.Cfg.AppTheme" />
+            }
+
+            @if (_bottomTabs.Count > 0)
+            {
+                <div class="splitter splitter-horizontal" title="拖动调整高度"></div>
+                <BottomPanel Logs="_logs"
+                             Collapsed="@_bottomCollapsed"
+                             CollapsedChanged="OnBottomCollapsedChanged"
+                             Tabs="_bottomTabs"
+                             ActiveTab="@_bottomActiveTab"
+                             ActiveTabChanged="OnBottomActiveTabChanged"
+                             OnCloseTab="OnBottomCloseTab"
+                             OnFlashRequested="() => _showFlash = true" />
+            }
+        </div>
+    </div>
+
+    <StatusBar FilePath="@_activeTabPath"
+               Line="_cursorLine"
+               Column="_cursorColumn"
+               Language="@GetActiveLanguage()"
+               BoardFqbn="@(_currentConfig?.BoardFqbn ?? Config.Cfg.DefaultFqbn)" />
+</div>
+
+<DialogHost @ref="_dialogHost"
+            ShowNewProject="_showNewDialog"
+            ShowOpenProject="_showOpenDialog"
+            ShowCreateFolder="_showCreateFolderDialog"
+            ShowCreateFile="_showCreateFileDialog"
+            ShowRename="_showRenameDialog"
+            ShowBoardManager="_showBoardDialog"
+            ShowAdditionalUrls="_showAdditionalUrlsDialog"
+            ShowLibraryManager="_showLibDialog"
+            ShowSettings="_showSettingsDialog"
+            ShowBoardConfig="_showBoardConfigDialog"
+            ShowProjectSettings="_showProjectSettings"
+            ShowGlobalSearch="_showGlobalSearch"
+            ShowShortcuts="_showShortcuts"
+            ShowExamples="_showExamples"
+            ShowConfirmCloseTab="_showConfirmCloseTab"
+            Projects="_projects"
+            DefaultFqbn="Config.Cfg.DefaultFqbn"
+            BoardConfigFqbn="@(_currentConfig?.BoardFqbn ?? Config.Cfg.DefaultFqbn)"
+            BoardConfigLabel="@GetCurrentBoardLabel()"
+            BoardConfigValues="_boardConfigValues"
+            ProjectSettingsConfig="_currentConfig"
+            GlobalSearchRoot="@(_currentConfig != null ? ProjectSvc.GetProjectDir(_currentConfig.Name) : "")"
+            ExampleInstallDir="@_exampleInstallDir"
+            ConfirmCloseTabFileName="@_confirmCloseTabFileName"
+            OnCloseNewProject="CloseNewProjectDialog"
+            OnCloseOpenProject="() => _showOpenDialog = false"
+            OnCloseCreateFolder="() => _showCreateFolderDialog = false"
+            OnCloseCreateFile="() => _showCreateFileDialog = false"
+            OnCloseRename="() => _showRenameDialog = false"
+            OnCloseBoardManager="() => _showBoardDialog = false"
+            OnCloseAdditionalUrls="() => _showAdditionalUrlsDialog = false"
+            OnCloseLibraryManager="() => _showLibDialog = false"
+            OnCloseSettings="() => _showSettingsDialog = false"
+            OnCloseBoardConfig="() => _showBoardConfigDialog = false"
+            OnCloseProjectSettings="() => _showProjectSettings = false"
+            OnCloseGlobalSearch="() => _showGlobalSearch = false"
+            OnCloseShortcuts="() => _showShortcuts = false"
+            OnCloseExamples="() => _showExamples = false"
+            OnCloseConfirmCloseTab="OnCloseConfirmCloseTab"
+            OnNewProjectSubmit="OnNewProjectSubmit"
+            OnOpenProjectSelected="LoadProjectAsync"
+            OnCreateFolderConfirm="ConfirmCreateFolder"
+            OnCreateFileConfirm="ConfirmCreateFile"
+            OnRenameConfirm="ConfirmRename"
+            OnSaveSettingsConfirm="SaveSettings"
+            OnBoardSelected="OnBoardSelected"
+            OnBoardConfigSave="SaveBoardConfig"
+            OnOpenAdditionalUrls="OpenAdditionalUrlsDialog"
+            OnAdditionalUrlsSaved="SaveAdditionalUrls"
+            OnOpenProjectDeleteConfirmed="DeleteProjectAsync"
+            OnProjectSettingsSave="SaveProjectSettings"
+            OnGlobalSearchResultSelected="OnGlobalSearchResult"
+            OnExampleFileSelected="OnExampleFileSelected"
+            OnConfirmCloseTabYes="OnConfirmCloseTabYes"
+            OnConfirmCloseTabNo="OnConfirmCloseTabNo"
+            OnConfirmCloseTabCancel="OnConfirmCloseTabCancel"
+            ShowFlash="_showFlash"
+            OnCloseFlash="() => _showFlash = false"
+            FlashProjectName="@(_currentConfig?.Name ?? "")"
+            FlashBoardFqbn="@(_currentConfig?.BoardFqbn ?? "")"
+            ShowChangePassword="_showChangePassword"
+            OnCloseChangePassword="() => _showChangePassword = false"
+            OnChangePasswordSaved="OnChangePasswordSaved"
+            ShowAbout="_showAbout"
+            OnCloseAbout="() => _showAbout = false" 
+            ShowDonate="_showDonate"
+            OnCloseDonate="() => _showDonate = false" />

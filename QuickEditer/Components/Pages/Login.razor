@@ -1,0 +1,186 @@
+﻿@* 文件路径：Components/Pages/Login.razor *@
+@page "/login"
+@layout EmptyLayout
+@rendermode InteractiveServer
+@using QuickEditer.Components.Layout
+@using QuickEditer.Core
+@using QuickEditer.Services
+@inject AuthService Auth
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="login-page">
+    <div class="login-bg-glow login-bg-glow-1"></div>
+    <div class="login-bg-glow login-bg-glow-2"></div>
+
+    <div class="login-box">
+        <div class="login-logo">
+            <img src="images/qeicon.png" alt="QuickEditer" class="login-logo-img" />
+            <div class="login-logo-text">
+                <span class="login-logo-name">QuickEditer</span>
+                <span class="login-logo-sub">Arduino Web IDE</span>
+            </div>
+        </div>
+
+        @if (_stage == "login")
+        {
+            <div class="login-title">欢迎回来</div>
+            <div class="login-subtitle">输入密码继续</div>
+
+            @if (Auth.IsLocked)
+            {
+                <div class="login-error">
+                    <i class="qe-ico qe-ico-lock"></i>
+                    登录已锁定，请 @Math.Ceiling(Auth.LockRemaining.TotalMinutes) 分钟后再试。
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="login-error">
+                    <i class="qe-ico qe-ico-warning"></i>
+                    @_error
+                </div>
+            }
+
+            <div class="login-field">
+                <label class="login-label">密码</label>
+                <input type="password" class="qe-input login-input"
+                       placeholder="请输入密码"
+                       @bind="_password"
+                       @bind:event="oninput"
+                       @onkeydown="OnKeyDown"
+                       disabled="@Auth.IsLocked" />
+            </div>
+
+            <label class="login-remember">
+                <input type="checkbox" @bind="_remember" />
+                <span>记住密码</span>
+            </label>
+
+            <button class="qe-btn qe-btn-primary login-submit"
+                    @onclick="LoginAsync"
+                    disabled="@Auth.IsLocked">
+                登录
+            </button>
+
+            @if (Auth.IsFirstLogin)
+            {
+                <div class="login-hint">
+                    <i class="qe-ico qe-ico-tips"></i>
+                    初始密码：quickadmin
+                </div>
+            }
+        }
+        else
+        {
+            <div class="login-title">设置新密码</div>
+            <div class="login-subtitle">首次登录需要修改密码</div>
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="login-error">
+                    <i class="qe-ico qe-ico-warning"></i>
+                    @_error
+                </div>
+            }
+
+            <div class="login-field">
+                <label class="login-label">新密码</label>
+                <input type="password" class="qe-input login-input"
+                       placeholder="至少 8 位，含大小写、数字、特殊字符"
+                       @bind="_newPwd1" @bind:event="oninput" />
+            </div>
+
+            <div class="login-field">
+                <label class="login-label">确认新密码</label>
+                <input type="password" class="qe-input login-input"
+                       placeholder="再次输入"
+                       @bind="_newPwd2" @bind:event="oninput" />
+            </div>
+
+            <button class="qe-btn qe-btn-primary login-submit" @onclick="ChangePasswordAsync">
+                保存并登录
+            </button>
+        }
+    </div>
+
+    <div class="login-footer">QuickEditer · @Config.AppVersion</div>
+</div>
+
+@code {
+    private string _stage = "login";
+    private string _password = "";
+    private string _error = "";
+    private bool _remember = false;
+    private string _newPwd1 = "";
+    private string _newPwd2 = "";
+
+    protected override void OnInitialized()
+    {
+        Auth.EnsureInitialPassword();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await LoginAsync();
+    }
+
+    private async Task LoginAsync()
+    {
+        _error = "";
+
+        if (string.IsNullOrEmpty(_password))
+        {
+            _error = "请输入密码";
+            return;
+        }
+
+        var (ok, error) = Auth.Login(_password);
+        if (!ok)
+        {
+            _error = error;
+            _password = "";
+            return;
+        }
+
+        if (Auth.MustChangePassword)
+        {
+            _stage = "change";
+            _error = "";
+            return;
+        }
+
+        await CompleteLoginAsync();
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        _error = "";
+
+        var (ok, pwdError) = AuthService.ValidatePasswordStrength(_newPwd1);
+        if (!ok)
+        {
+            _error = pwdError;
+            return;
+        }
+
+        if (_newPwd1 != _newPwd2)
+        {
+            _error = "两次输入不一致";
+            return;
+        }
+
+        Auth.SetPassword(_newPwd1, mustChange: false);
+        await CompleteLoginAsync();
+    }
+
+    private async Task CompleteLoginAsync()
+    {
+        var token = Auth.GenerateAuthToken();
+        var days = _remember ? Auth.CookieDaysValue : 0;
+        await JS.InvokeVoidAsync("quickEditer.setAuthCookie", token, days);
+        Nav.NavigateTo("/", forceLoad: true);
+    }
+}

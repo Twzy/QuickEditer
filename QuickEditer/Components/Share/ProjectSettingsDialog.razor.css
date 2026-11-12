@@ -1,0 +1,12 @@
+﻿.project-settings-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 380px;
+}
+
+.form-hint {
+    font-size: 11px;
+    color: var(--qe-text-dimmer);
+    margin-top: 4px;
+}

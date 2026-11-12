@@ -1,0 +1,180 @@
+﻿@* 文件路径：Components/Share/NewProjectDialog.razor *@
+
+@using QuickEditer.Core
+@using QuickEditer.Models
+@using QuickEditer.Services
+@inject ArduinoCliService CliSvc
+
+<div class="new-project-form">
+    <label class="form-label">项目名称 <span class="required">*</span></label>
+    <input class="form-control @(string.IsNullOrEmpty(_error) ? "" : "is-invalid")"
+           placeholder="例如：BlinkLed"
+           @bind="_projectName"
+           @bind:event="oninput"
+           @bind:after="ValidateName" />
+
+    <div class="form-hint-line">
+        @if (!string.IsNullOrEmpty(_nameHint))
+        {
+            <span class="form-hint">@_nameHint</span>
+        }
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <span class="form-error">@_error</span>
+        }
+    </div>
+
+    <label class="form-label mt-3">开发板（可选）</label>
+    @if (_loading)
+    {
+        <div class="form-hint">正在加载开发板...</div>
+    }
+    else
+    {
+        <select class="form-control" @bind="_selectedFqbn">
+            @if (InstalledBoards.Count > 0)
+            {
+                <optgroup label="已安装核心">
+                    @foreach (var b in InstalledBoards)
+                    {
+                        <option value="@b.Fqbn">@b.Name（@b.Fqbn）</option>
+                    }
+                </optgroup>
+            }
+            @if (BuiltinBoards.Count > 0)
+            {
+                <optgroup label="内置开发板（需安装对应核心）">
+                    @foreach (var b in BuiltinBoards)
+                    {
+                        <option value="@b.Fqbn">@b.Name（@b.Fqbn）</option>
+                    }
+                </optgroup>
+            }
+        </select>
+    }
+
+    <label class="form-label mt-3">模板</label>
+    <select class="form-control" @bind="_selectedTemplate">
+        @foreach (var t in ProjectTemplate.BuiltIn)
+        {
+            <option value="@t.Id">@t.Name - @t.Description</option>
+        }
+    </select>
+
+    <label class="form-label mt-3">项目描述</label>
+    <textarea class="form-control" rows="2" placeholder="可选" @bind="_description"></textarea>
+</div>
+
+@code {
+    [Parameter] public string DefaultFqbn { get; set; } = "";
+    [Parameter] public EventCallback<(string Name, string Fqbn, string Description, string TemplateId)> OnSubmit { get; set; }
+
+    private List<ArduinoBoardInfo> _boards = new();
+    private string _projectName = "";
+    private string _selectedFqbn = "";
+    private string _description = "";
+    private string _selectedTemplate = "blank";
+    private string _error = "";
+    private string _nameHint = "";
+    private bool _loading;
+
+    private List<ArduinoBoardInfo> InstalledBoards =>
+        _boards.Where(b => !b.IsBuiltin).ToList();
+
+    private List<ArduinoBoardInfo> BuiltinBoards =>
+        _boards.Where(b => b.IsBuiltin).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBoardsAsync();
+    }
+
+    private async Task LoadBoardsAsync()
+    {
+        _loading = true;
+        try
+        {
+            _boards = await CliSvc.GetAvailableBoardsAsync();
+        }
+        catch
+        {
+            _boards = new();
+        }
+
+        if (string.IsNullOrEmpty(_selectedFqbn) && _boards.Count > 0)
+        {
+            var match = _boards.FirstOrDefault(b => b.Fqbn == DefaultFqbn);
+            _selectedFqbn = match?.Fqbn ?? _boards[0].Fqbn;
+        }
+
+        _loading = false;
+    }
+
+    private void ValidateName()
+    {
+        if (string.IsNullOrWhiteSpace(_projectName))
+        {
+            _error = "";
+            _nameHint = "";
+            return;
+        }
+
+        var invalid = System.IO.Path.GetInvalidFileNameChars();
+        if (_projectName.Any(c => invalid.Contains(c)))
+        {
+            _error = "名称包含非法字符";
+            _nameHint = "";
+            return;
+        }
+
+        _error = "";
+
+        var dir = System.IO.Path.Combine(Config.ProjectsDir, _projectName.Trim());
+        _nameHint = System.IO.Directory.Exists(dir)
+            ? "⚠️ 同名项目已存在"
+            : "✅ 名称可用";
+    }
+
+    public async Task SubmitAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_projectName))
+        {
+            _error = "请输入项目名称";
+            StateHasChanged();
+            return;
+        }
+
+        var invalid = System.IO.Path.GetInvalidFileNameChars();
+        if (_projectName.Any(c => invalid.Contains(c)))
+        {
+            _error = "名称包含非法字符";
+            StateHasChanged();
+            return;
+        }
+
+
+        _error = "";
+
+        if (OnSubmit.HasDelegate)
+            await OnSubmit.InvokeAsync((_projectName.Trim(), _selectedFqbn, _description ?? "", _selectedTemplate));
+    }
+
+    public void Reset()
+    {
+        _projectName = "";
+        _description = "";
+        _selectedTemplate = "blank";
+        _error = "";
+        _nameHint = "";
+
+        if (_boards.Count > 0)
+        {
+            var match = _boards.FirstOrDefault(b => b.Fqbn == DefaultFqbn);
+            _selectedFqbn = match?.Fqbn ?? _boards[0].Fqbn;
+        }
+        else
+        {
+            _selectedFqbn = DefaultFqbn;
+        }
+    }
+}

@@ -1,0 +1,176 @@
+﻿@* 文件路径：Components/Share/BoardSelector.razor *@
+
+
+@using QuickEditer.Models
+@using QuickEditer.Services
+@inject ArduinoCliService CliSvc
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="board-selector" @onclick:stopPropagation="true">
+    <button class="board-btn" @onclick="Toggle" title="选择开发板">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2" />
+            <rect x="9" y="9" width="6" height="6" rx="1" />
+        </svg>
+        <span class="board-label">@DisplayLabel</span>
+        <svg class="board-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.4"
+             stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+        </svg>
+    </button>
+
+    @if (_open)
+    {
+        <div class="board-menu" @onclick:stopPropagation="true">
+            <div class="board-menu-search">
+                <input class="form-control form-control-sm"
+                       placeholder="搜索开发板"
+                       @bind="_filter"
+                       @bind:event="oninput" />
+            </div>
+
+            @if (_loading)
+            {
+                <div class="board-menu-empty">加载中...</div>
+            }
+            else if (FilteredBoards.Count == 0)
+            {
+                <div class="board-menu-empty">暂无匹配的开发板</div>
+            }
+            else
+            {
+                <div class="board-menu-list">
+                    @if (InstalledBoards.Count > 0)
+                    {
+                        <div class="board-menu-section">已安装核心</div>
+                        @foreach (var b in InstalledBoards)
+                        {
+                            <div class="board-menu-item @(b.Fqbn == CurrentFqbn ? "active" : "")"
+                                 @onclick="() => SelectAsync(b)">
+                                <div class="board-menu-item-main">
+                                    <div class="board-menu-item-name">@b.Name</div>
+                                    <div class="board-menu-item-fqbn">@b.Fqbn</div>
+                                </div>
+                                @if (b.Fqbn == CurrentFqbn)
+                                {
+                                    <span class="board-check">✓</span>
+                                }
+                            </div>
+                        }
+                    }
+
+                    @if (BuiltinBoards.Count > 0)
+                    {
+                        <div class="board-menu-section">内置开发板</div>
+                        @foreach (var b in BuiltinBoards)
+                        {
+                            <div class="board-menu-item @(b.Fqbn == CurrentFqbn ? "active" : "")"
+                                 @onclick="() => SelectAsync(b)">
+                                <div class="board-menu-item-main">
+                                    <div class="board-menu-item-name">@b.Name</div>
+                                    <div class="board-menu-item-fqbn">@b.Fqbn · 需安装对应核心</div>
+                                </div>
+                                @if (b.Fqbn == CurrentFqbn)
+                                {
+                                    <span class="board-check">✓</span>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool _open;
+    private bool _loading;
+    private string _filter = "";
+    private List<ArduinoBoardInfo> _boards = new();
+    private DotNetObjectReference<BoardSelector>? _selfRef;
+
+    [Parameter] public string? CurrentFqbn { get; set; }
+    [Parameter] public EventCallback<string> OnSelected { get; set; }
+
+    private string DisplayLabel =>
+        string.IsNullOrEmpty(CurrentFqbn)
+            ? "未选择开发板"
+            : (_boards.FirstOrDefault(b => b.Fqbn == CurrentFqbn)?.Name ?? CurrentFqbn);
+
+    private List<ArduinoBoardInfo> FilteredBoards =>
+        string.IsNullOrWhiteSpace(_filter)
+            ? _boards
+            : _boards.Where(b =>
+                b.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase) ||
+                b.Fqbn.Contains(_filter, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private List<ArduinoBoardInfo> InstalledBoards =>
+        FilteredBoards.Where(b => !b.IsBuiltin).ToList();
+
+    private List<ArduinoBoardInfo> BuiltinBoards =>
+        FilteredBoards.Where(b => b.IsBuiltin).ToList();
+
+    protected override void OnInitialized()
+    {
+        _ = LoadBoardsAsync();
+    }
+
+    private async Task LoadBoardsAsync()
+    {
+        _loading = true;
+        try
+        {
+            _boards = await CliSvc.GetAvailableBoardsAsync();
+        }
+        catch
+        {
+            _boards = new();
+        }
+        _loading = false;
+        StateHasChanged();
+    }
+
+    private async Task Toggle()
+    {
+        _open = !_open;
+        if (_open)
+        {
+            if (_boards.Count == 0)
+                await LoadBoardsAsync();
+
+            _selfRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("quickEditer.registerBoardMenuClose", _selfRef);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("quickEditer.unregisterBoardMenuClose");
+        }
+    }
+
+    private async Task SelectAsync(ArduinoBoardInfo board)
+    {
+        _open = false;
+        await JS.InvokeVoidAsync("quickEditer.unregisterBoardMenuClose");
+
+        if (OnSelected.HasDelegate)
+            await OnSelected.InvokeAsync(board.Fqbn);
+    }
+
+    [JSInvokable]
+    public async Task CloseMenu()
+    {
+        if (!_open) return;
+        _open = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _selfRef?.Dispose();
+    }
+}

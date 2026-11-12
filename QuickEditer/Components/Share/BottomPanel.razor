@@ -1,0 +1,87 @@
+﻿@* 文件路径：Components/Share/BottomPanel.razor *@
+@using QuickEditer.Models
+
+<div class="bottom-panel @(Collapsed ? "collapsed" : "")">
+    <div class="bottom-header">
+        <div class="bottom-tabs">
+            @foreach (var tab in Tabs)
+            {
+                <div class="bottom-tab @(tab == ActiveTab ? "active" : "")"
+                     @onclick="() => ActivateTab(tab)">
+                    <i class="qe-ico @GetTabIcon(tab)"></i>
+                    <span>@tab</span>
+                    <span class="bottom-tab-close" @onclick:stopPropagation="true" @onclick="() => CloseTab(tab)">
+                        <i class="qe-ico qe-ico-close"></i>
+                    </span>
+                </div>
+            }
+        </div>
+        <div class="bottom-actions">
+            <button class="qe-icon-btn" title="@CollapseTitle" @onclick="ToggleCollapsed">
+                <i class="qe-ico @CollapseIcon"></i>
+            </button>
+        </div>
+    </div>
+
+    @if (!Collapsed)
+    {
+        <div class="bottom-body">
+            @if (ActiveTab == "输出")
+            {
+                <OutputPanel Logs="Logs" OnFlashRequested="OnFlashRequested" />
+            }
+            else if (ActiveTab == "串口监视器")
+            {
+                <SerialMonitorPanel />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public List<OutputLogEntry> Logs { get; set; } = new();
+    [Parameter] public bool Collapsed { get; set; }
+    [Parameter] public EventCallback<bool> CollapsedChanged { get; set; }
+    [Parameter] public List<string> Tabs { get; set; } = new();
+    [Parameter] public string? ActiveTab { get; set; }
+    [Parameter] public EventCallback<string> ActiveTabChanged { get; set; }
+    [Parameter] public EventCallback<string> OnCloseTab { get; set; }
+    [Parameter] public EventCallback OnFlashRequested { get; set; }
+
+
+    private string CollapseTitle => Collapsed ? "展开" : "收起";
+    private string CollapseIcon => Collapsed ? "qe-ico-arrow-up" : "qe-ico-arrow-down";
+    private static string GetTabIcon(string tab) => tab switch
+    {
+        "输出" => "qe-ico-logs",
+        "串口监视器" => "qe-ico-com",
+        _ => "qe-ico-file"
+    };
+
+    private async Task ActivateTab(string tab)
+    {
+        if (Collapsed)
+        {
+            Collapsed = false;
+            if (CollapsedChanged.HasDelegate)
+                await CollapsedChanged.InvokeAsync(false);
+        }
+
+        if (ActiveTab == tab) return;
+        if (ActiveTabChanged.HasDelegate)
+            await ActiveTabChanged.InvokeAsync(tab);
+    }
+
+    private async Task CloseTab(string tab)
+    {
+        if (OnCloseTab.HasDelegate)
+            await OnCloseTab.InvokeAsync(tab);
+    }
+
+    private async Task ToggleCollapsed()
+    {
+        Collapsed = !Collapsed;
+        if (CollapsedChanged.HasDelegate)
+            await CollapsedChanged.InvokeAsync(Collapsed);
+    }
+}

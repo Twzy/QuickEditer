@@ -1,0 +1,49 @@
+﻿@* 文件路径：Components/Share/ModalBase.razor *@
+@if (Show)
+{
+    <div class="dialog-container">
+        <div class="dialog @DialogClass">
+            <div class="dialog-title">
+                <h3>@Title</h3>
+                <button class="dialog-close" @onclick="HandleCancel" title="关闭">✕</button>
+            </div>
+            <div class="dialog-body">
+                @ChildContent
+            </div>
+            <div class="dialog-buttons">
+                <div class="dialog-buttons-left">
+                    @FooterLeftContent
+                </div>
+                <div class="dialog-buttons-right">
+                    <button class="btn btn-secondary" @onclick="HandleCancel">取消</button>
+                    <button class="btn btn-primary" @onclick="HandleConfirm">确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string DialogClass { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>底部左侧插槽，常用于放置额外按钮</summary>
+    [Parameter] public RenderFragment? FooterLeftContent { get; set; }
+
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task HandleConfirm()
+    {
+        if (OnConfirm.HasDelegate)
+            await OnConfirm.InvokeAsync();
+    }
+
+    private async Task HandleCancel()
+    {
+        if (OnCancel.HasDelegate)
+            await OnCancel.InvokeAsync();
+    }
+}

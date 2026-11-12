@@ -1,0 +1,26 @@
+﻿/* 文件路径：Components/Share/AdditionalUrlsDialog.razor.css */
+
+.urls-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 560px;
+    max-width: 100%;
+}
+
+.urls-hint {
+    font-size: 12px;
+    color: var(--qe-text-dim);
+    line-height: 1.6;
+}
+
+.urls-textarea {
+    min-height: 160px;
+}
+
+.urls-footer-hint {
+    font-size: 11px;
+    color: var(--qe-text-dimmer);
+    word-break: break-all;
+    line-height: 1.5;
+}

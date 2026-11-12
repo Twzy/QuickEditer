@@ -1,0 +1,35 @@
+﻿@* 文件路径：Components/Share/FilePreviewPanel.razor *@
+
+<div class="file-preview">
+    <div class="file-preview-icon @IconClass">
+        <i class="qe-ico @IconGlyph"></i>
+    </div>
+    <div class="file-preview-name">@Path.GetFileName(FilePath)</div>
+    <div class="file-preview-actions">
+        <a class="file-preview-btn" href="@DownloadUrl" download>
+            <i class="qe-ico qe-ico-download"></i> 下载
+        </a>
+    </div>
+    <div class="file-preview-hint">@HintText</div>
+</div>
+
+@code {
+    [Parameter] public string FilePath { get; set; } = "";
+
+    private string DownloadUrl =>
+        string.IsNullOrEmpty(FilePath)
+            ? "#"
+            : $"/api/file/download?path={Uri.EscapeDataString(FilePath)}";
+
+    private string Ext => Path.GetExtension(FilePath).ToLowerInvariant();
+
+    private bool IsFirmware => Ext is ".bin" or ".hex" or ".uf2" or ".eep";
+
+    private string IconClass => IsFirmware ? "firmware" : "";
+
+    private string IconGlyph => IsFirmware ? "qe-ico-firmware" : "qe-ico-file";
+
+    private string HintText => IsFirmware
+        ? "固件文件，可用于烧录或手动下载"
+        : "该文件类型不支持在编辑器中打开";
+}

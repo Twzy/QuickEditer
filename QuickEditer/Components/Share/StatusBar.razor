@@ -1,0 +1,40 @@
+﻿@* 文件路径：Components/Share/StatusBar.razor *@
+@using QuickEditer.Models
+
+<div class="status-bar">
+    <div class="status-bar-left">
+        @if (!string.IsNullOrEmpty(FilePath))
+        {
+            <span class="status-item" title="当前文件">@Path.GetFileName(FilePath)</span>
+        }
+        @if (Line > 0)
+        {
+            <span class="status-item">行 @Line, 列 @Column</span>
+        }
+    </div>
+    <div class="status-bar-right">
+        @if (!string.IsNullOrEmpty(Language))
+        {
+            <span class="status-item">@Language</span>
+        }
+        <span class="status-item">UTF-8</span>
+        <span class="status-item">CRLF</span>
+        @if (!string.IsNullOrEmpty(BoardFqbn))
+        {
+            <span class="status-item" title="@BoardFqbn">@BoardFqbn</span>
+        }
+        @if (!string.IsNullOrEmpty(Port))
+        {
+            <span class="status-item">@Port</span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? FilePath { get; set; }
+    [Parameter] public int Line { get; set; }
+    [Parameter] public int Column { get; set; }
+    [Parameter] public string? Language { get; set; }
+    [Parameter] public string? BoardFqbn { get; set; }
+    [Parameter] public string? Port { get; set; }
+}

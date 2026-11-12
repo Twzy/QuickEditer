@@ -1,0 +1,66 @@
+﻿/* 文件路径：Components/Share/FilePreviewPanel.razor.css */
+
+.file-preview {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px;
+    background: var(--qe-bg);
+    text-align: center;
+}
+
+.file-preview-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    background: var(--qe-bg-2);
+    border: 1px solid var(--qe-border);
+    color: var(--qe-text-dim);
+    font-size: 28px;
+}
+
+    .file-preview-icon.firmware {
+        background: rgba(78, 201, 176, 0.12);
+        border-color: rgba(78, 201, 176, 0.4);
+        color: var(--qe-success);
+    }
+
+.file-preview-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--qe-text);
+}
+
+.file-preview-actions {
+    margin-top: 8px;
+}
+
+.file-preview-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 18px;
+    font-size: 13px;
+    color: var(--qe-accent-text);
+    border: 1px solid rgba(86, 156, 214, 0.45);
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background .15s, color .15s;
+}
+
+    .file-preview-btn:hover {
+        background: rgba(86, 156, 214, 0.15);
+        color: var(--qe-accent-text-hover);
+    }
+
+.file-preview-hint {
+    font-size: 11px;
+    color: var(--qe-text-dimmer);
+}

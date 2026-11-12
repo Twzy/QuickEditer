@@ -1,0 +1,168 @@
+﻿@* 文件路径：Components/Share/EditorPanel.razor *@
+@using QuickEditer.Models
+
+<div class="editor-area">
+    <div class="editor-tabs">
+        @foreach (var tab in Tabs)
+        {
+            <div class="editor-tab @(tab.FilePath == ActivePath ? "active" : "")"
+                 draggable="true"
+                 @ondragstart="() => OnTabDragStart.InvokeAsync(tab.FilePath)"
+                 @ondragover:preventDefault="true"
+                 @ondrop="() => OnTabDrop.InvokeAsync(tab.FilePath)"
+                 @onclick="() => OnActivate.InvokeAsync(tab.FilePath)"
+                 @onauxclick="e => HandleAuxClick(e, tab.FilePath)">
+                @if (tab.IsReadOnly)
+                {
+                    <span class="tab-badge">只读</span>
+                }
+                <span class="tab-title">@tab.FileName</span>
+                @if (tab.IsDirty)
+                {
+                    <span class="tab-dirty" title="未保存"></span>
+                }
+                <span class="tab-close"
+                      @onclick:stopPropagation="true"
+                      @onclick="() => OnClose.InvokeAsync(tab.FilePath)">
+                    <i class="qe-ico qe-ico-close"></i>
+                </span>
+            </div>
+        }
+        @if (Tabs.Count > 1)
+        {
+            <div class="tab-actions">
+                <button class="qe-icon-btn qe-icon-btn-sm" title="关闭其他" @onclick="CloseOthers">
+                    <i class="qe-ico qe-ico-close"></i>
+                </button>
+                <button class="qe-icon-btn qe-icon-btn-sm" title="全部关闭" @onclick="CloseAll">
+                    <i class="qe-ico qe-ico-delete"></i>
+                </button>
+            </div>
+        }
+    </div>
+
+    <div class="editor-content">
+        @if (ActivePath == null)
+        {
+            <div class="editor-empty-overlay editor-empty-overlay-block">
+                请新建或打开一个项目，并在左侧选择文件
+            </div>
+        }
+        else
+        {
+            var activeTab = Tabs.FirstOrDefault(t => t.FilePath == ActivePath);
+            if (activeTab?.IsImage == true)
+            {
+                <div class="image-viewer">
+                    <img src="@GetImageUrl(activeTab.FilePath)" alt="@activeTab.FileName" />
+                </div>
+            }
+            else
+            {
+                <div class="code-editor-wrapper">
+                    <CodeEditor @ref="_codeEditor"
+                                Content="@CurrentContent"
+                                Language="@CurrentLanguage"
+                                ReadOnly="@(activeTab?.IsReadOnly ?? false)"
+                                OnChanged="HandleContentChanged"
+                                OnSaveRequested="OnSaveRequested"
+                                OnCursorChanged="OnCursorChanged"
+                                OnScrollChanged="HandleScrollChanged"
+                                Theme="@Theme" />
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private CodeEditor? _codeEditor;
+    private int _cursorLine = 1;
+    private int _cursorColumn = 1;
+
+    [Parameter] public List<EditorTabInfo> Tabs { get; set; } = new();
+    [Parameter] public string? ActivePath { get; set; }
+    [Parameter] public string? CurrentContent { get; set; }
+    [Parameter] public EventCallback<string> OnActivate { get; set; }
+    [Parameter] public EventCallback<string> OnClose { get; set; }
+    [Parameter] public EventCallback<(string FilePath, string Content)> OnContentChanged { get; set; }
+    [Parameter] public EventCallback OnSaveRequested { get; set; }
+    [Parameter] public EventCallback OnCloseOthers { get; set; }
+    [Parameter] public EventCallback OnCloseAll { get; set; }
+    [Parameter] public EventCallback<string> OnTabDragStart { get; set; }
+    [Parameter] public EventCallback<string> OnTabDrop { get; set; }
+    [Parameter] public EventCallback<(int Line, int Column)> OnCursorPositionChanged { get; set; }
+    [Parameter] public string? Theme { get; set; }
+
+    private static string GetImageUrl(string path) =>
+    $"/api/file/image?path={Uri.EscapeDataString(path)}";
+
+    private string CurrentLanguage => FileTypeHelper.GetLanguage(ActivePath);
+
+    private static bool IsImage(string path) => FileTypeHelper.IsImage(path);
+
+    private async Task HandleAuxClick(MouseEventArgs e, string path)
+    {
+        if (e.Button == 1)
+        {
+            await OnClose.InvokeAsync(path);
+        }
+    }
+
+    private async Task CloseOthers()
+    {
+        if (OnCloseOthers.HasDelegate)
+            await OnCloseOthers.InvokeAsync();
+    }
+
+    private async Task CloseAll()
+    {
+        if (OnCloseAll.HasDelegate)
+            await OnCloseAll.InvokeAsync();
+    }
+
+    private async Task OnCursorChanged((int Line, int Column) pos)
+    {
+        _cursorLine = pos.Line;
+        _cursorColumn = pos.Column;
+        if (OnCursorPositionChanged.HasDelegate)
+            await OnCursorPositionChanged.InvokeAsync(pos);
+    }
+
+    private async Task HandleContentChanged(string content)
+    {
+        if (OnContentChanged.HasDelegate && !string.IsNullOrEmpty(ActivePath))
+            await OnContentChanged.InvokeAsync((ActivePath, content));
+    }
+
+    public async Task UndoAsync() { if (_codeEditor != null) await _codeEditor.UndoAsync(); }
+    public async Task RedoAsync() { if (_codeEditor != null) await _codeEditor.RedoAsync(); }
+    public async Task CopyAsync() { if (_codeEditor != null) await _codeEditor.CopyAsync(); }
+    public async Task CutAsync() { if (_codeEditor != null) await _codeEditor.CutAsync(); }
+    public async Task PasteAsync() { if (_codeEditor != null) await _codeEditor.PasteAsync(); }
+    public async Task SelectAllAsync() { if (_codeEditor != null) await _codeEditor.SelectAllAsync(); }
+    public async Task FindAsync() { if (_codeEditor != null) await _codeEditor.FindAsync(); }
+    public async Task ReplaceAsync() { if (_codeEditor != null) await _codeEditor.ReplaceAsync(); }
+
+    public async Task ToggleCommentAsync() { if (_codeEditor != null) await _codeEditor.ToggleCommentAsync(); }
+
+
+    [Parameter] public EventCallback<(string FilePath, int ScrollTop)> OnScrollChanged { get; set; }
+
+    private async Task HandleScrollChanged(int scrollTop)
+    {
+        if (OnScrollChanged.HasDelegate && !string.IsNullOrEmpty(ActivePath))
+            await OnScrollChanged.InvokeAsync((ActivePath, scrollTop));
+    }
+
+    public async Task RestoreScrollAsync(int scrollTop)
+    {
+        if (_codeEditor != null) await _codeEditor.SetScrollAsync(scrollTop);
+    }
+
+    public async Task RefreshThemeAsync()
+    {
+        if (_codeEditor != null)
+            await _codeEditor.RefreshThemeAsync();
+    }
+}

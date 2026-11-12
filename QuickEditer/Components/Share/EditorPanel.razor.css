@@ -1,0 +1,64 @@
+﻿/* 文件路径：Components/Share/EditorPanel.razor.css */
+
+.tab-dirty {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--qe-warning);
+    flex-shrink: 0;
+}
+
+.tab-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 6px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.editor-tab[draggable="true"] {
+    cursor: pointer;
+}
+
+.editor-tab .tab-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    font-size: 10px;
+    color: var(--qe-text-dim);
+    transition: background .12s, color .12s;
+    margin-left: auto;
+}
+
+.tab-badge {
+    font-size: 10px;
+    padding: 5px 5px;
+    border-radius: 3px;
+    background: rgba(86, 156, 214, 0.15);
+    color: var(--qe-accent-text);
+    border: 1px solid rgba(86, 156, 214, 0.35);
+    line-height: 14px;
+    flex-shrink: 0;
+}
+
+.image-viewer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--qe-bg);
+    overflow: auto;
+    padding: 16px;
+}
+
+    .image-viewer img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        image-rendering: auto;
+    }

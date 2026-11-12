@@ -1,0 +1,266 @@
+﻿@* 文件路径：Components/Share/MenuBar.razor *@
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="menu-bar">
+    <div class="menu-root">
+        <button class="menu-title" @onclick="ToggleFileMenu" @onclick:stopPropagation="true">文件</button>
+        @if (_openMenu == "file")
+        {
+            <div class="menu-dropdown" @onclick:stopPropagation="true">
+                <button class="menu-item" @onclick="NewProject"><i class="qe-ico qe-ico-add"></i> 新建项目</button>
+                <button class="menu-item" @onclick="OpenProject"><i class="qe-ico qe-ico-folder-open"></i> 打开项目</button>
+                <button class="menu-item" @onclick="NewFile"><i class="qe-ico qe-ico-file"></i> 新建文件</button>
+                <div class="menu-sep"></div>
+                <button class="menu-item" @onclick="Save"><i class="qe-ico qe-ico-save"></i> 保存 <span class="menu-shortcut">Ctrl+S</span></button>
+                <button class="menu-item" @onclick="SaveAll"><i class="qe-ico qe-ico-save-all"></i> 全部保存</button>
+                <div class="menu-sep"></div>
+                <button class="menu-item" @onclick="ProjectSettings"><i class="qe-ico qe-ico-setting"></i> 项目设置</button>
+                <button class="menu-item" @onclick="ExportProject"><i class="qe-ico qe-ico-download"></i> 导出项目 ZIP</button>
+                <button class="menu-item" @onclick="ChangePassword"><i class="qe-ico qe-ico-lock"></i> 修改密码</button>
+                @if (RecentProjects.Count > 0)
+                {
+                    <div class="menu-sep"></div>
+                    <div class="menu-sub-title">最近项目</div>
+                    @foreach (var p in RecentProjects)
+                    {
+                        var name = p;
+                        <button class="menu-item" @onclick="() => OpenRecent(name)">
+                            <i class="qe-ico qe-ico-folder"></i> @name
+                        </button>
+                    }
+                }
+
+                <div class="menu-sep"></div>
+                <button class="menu-item" @onclick="Logout"><i class="qe-ico qe-ico-signout"></i> 退出登录</button>
+            </div>
+        }
+    </div>
+
+    <div class="menu-root">
+        <button class="menu-title" @onclick="ToggleEditMenu" @onclick:stopPropagation="true">编辑</button>
+        @if (_openMenu == "edit")
+        {
+            <div class="menu-dropdown" @onclick:stopPropagation="true">
+                <button class="menu-item" @onclick="Undo"><i class="qe-ico qe-ico-undo"></i> 撤销 <span class="menu-shortcut">Ctrl+Z</span></button>
+                <button class="menu-item" @onclick="Redo"><i class="qe-ico qe-ico-redo"></i> 重做 <span class="menu-shortcut">Ctrl+Y</span></button>
+                <div class="menu-sep"></div>
+                <button class="menu-item" @onclick="Cut"><i class="qe-ico qe-ico-cut"></i> 剪切 <span class="menu-shortcut">Ctrl+X</span></button>
+                <button class="menu-item" @onclick="Copy"><i class="qe-ico qe-ico-copy"></i> 复制 <span class="menu-shortcut">Ctrl+C</span></button>
+                <button class="menu-item" @onclick="Paste"><i class="qe-ico qe-ico-paste"></i> 粘贴 <span class="menu-shortcut">Ctrl+V</span></button>
+                <div class="menu-sep"></div>
+                <button class="menu-item" @onclick="SelectAll"><i class="qe-ico qe-ico-selectall"></i> 全选 <span class="menu-shortcut">Ctrl+A</span></button>
+                <button class="menu-item" @onclick="Find"><i class="qe-ico qe-ico-search"></i> 查找 <span class="menu-shortcut">Ctrl+F</span></button>
+                <button class="menu-item" @onclick="Replace"><i class="qe-ico qe-ico-replace"></i> 替换 <span class="menu-shortcut">Ctrl+H</span></button>
+                <div class="menu-sep"></div>
+                <button class="menu-item" @onclick="GlobalSearch"><i class="qe-ico qe-ico-search"></i> 全局搜索 <span class="menu-shortcut">Ctrl+Shift+F</span></button>
+            </div>
+        }
+    </div>
+
+    <div class="menu-root">
+        <button class="menu-title" @onclick="ToggleViewMenu" @onclick:stopPropagation="true">视图</button>
+        @if (_openMenu == "view")
+        {
+            <div class="menu-dropdown" @onclick:stopPropagation="true">
+                <button class="menu-item" @onclick="ToggleOutput"><i class="qe-ico qe-ico-logs"></i> 切换输出面板</button>
+                <button class="menu-item" @onclick="ToggleSerial"><i class="qe-ico qe-ico-com"></i> 切换串口监视器</button>
+            </div>
+        }
+    </div>
+
+    <div class="menu-root">
+        <button class="menu-title" @onclick="ToggleBuildMenu" @onclick:stopPropagation="true">构建</button>
+        @if (_openMenu == "build")
+        {
+            <div class="menu-dropdown" @onclick:stopPropagation="true">
+                <button class="menu-item" @onclick="Compile"><i class="qe-ico qe-ico-play"></i> 编译 <span class="menu-shortcut">Ctrl+B</span></button>
+                <button class="menu-item" @onclick="CancelCompile"><i class="qe-ico qe-ico-stop"></i> 取消编译</button>
+                <div class="menu-sep"></div>
+                <button class="menu-item" @onclick="Flash"><i class="qe-ico qe-ico-upload"></i> 在线烧录</button>
+                <div class="menu-sep"></div>
+                <button class="menu-item" @onclick="CleanBuild"><i class="qe-ico qe-ico-clean"></i> 清理构建</button>
+                <button class="menu-item" @onclick="CleanLogs"><i class="qe-ico qe-ico-clean"></i> 清理日志</button>
+            </div>
+
+
+        }
+    </div>
+
+    <div class="menu-root">
+        <button class="menu-title" @onclick="ToggleExamplesMenu" @onclick:stopPropagation="true">示例</button>
+        @if (_openMenu == "examples")
+        {
+            <div class="menu-dropdown" @onclick:stopPropagation="true">
+                @if (ExampleSources.Count == 0)
+                {
+                    <div class="menu-empty">暂无可用示例</div>
+                }
+                else
+                {
+                    @foreach (var src in ExampleSources)
+                    {
+                        var name = src;
+                        <button class="menu-item" @onclick="() => OpenExampleSource(name)">
+                            <i class="qe-ico qe-ico-book"></i> @name
+                        </button>
+                    }
+                }
+            </div>
+        }
+    </div>
+
+
+
+    <div class="menu-root">
+        <button class="menu-title" @onclick="ToggleHelpMenu" @onclick:stopPropagation="true">帮助</button>
+        @if (_openMenu == "help")
+        {
+            <div class="menu-dropdown" @onclick:stopPropagation="true">
+                <button class="menu-item" @onclick="ShowHelp"><i class="qe-ico qe-ico-book"></i> 帮助文档</button>
+                <button class="menu-item" @onclick="ShowShortcuts"><i class="qe-ico qe-ico-key"></i> 快捷键</button>
+                <div class="menu-sep"></div>
+                <button class="menu-item" @onclick="ShowAbout"><i class="qe-ico qe-ico-tips"></i> 关于</button>
+            </div>
+        }
+    </div>
+
+    <div class="menu-root">
+        <button class="menu-title" @onclick="Donate" @onclick:stopPropagation="true">捐赠</button>
+    </div>
+</div>
+
+@code {
+    private string? _openMenu;
+    private DotNetObjectReference<MenuBar>? _selfRef;
+
+    [Parameter] public List<string> RecentProjects { get; set; } = new();
+    [Parameter] public EventCallback OnNewProject { get; set; }
+    [Parameter] public EventCallback OnOpenProject { get; set; }
+    [Parameter] public EventCallback OnNewFile { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnSaveAll { get; set; }
+    [Parameter] public EventCallback OnUndo { get; set; }
+    [Parameter] public EventCallback OnRedo { get; set; }
+    [Parameter] public EventCallback OnCut { get; set; }
+    [Parameter] public EventCallback OnCopy { get; set; }
+    [Parameter] public EventCallback OnPaste { get; set; }
+    [Parameter] public EventCallback OnSelectAll { get; set; }
+    [Parameter] public EventCallback OnFind { get; set; }
+    [Parameter] public EventCallback OnReplace { get; set; }
+    [Parameter] public EventCallback OnGlobalSearch { get; set; }
+    [Parameter] public EventCallback OnToggleOutput { get; set; }
+    [Parameter] public EventCallback OnCompile { get; set; }
+    [Parameter] public EventCallback OnExportProject { get; set; }
+    [Parameter] public EventCallback OnProjectSettings { get; set; }
+    [Parameter] public EventCallback<string> OnRecentProjectSelected { get; set; }
+    [Parameter] public EventCallback OnShowShortcuts { get; set; }
+    [Parameter] public EventCallback OnCancelCompile { get; set; }
+    [Parameter] public EventCallback OnCleanBuild { get; set; }
+    [Parameter] public EventCallback OnCleanLogs { get; set; }
+    [Parameter] public EventCallback OnToggleSerial { get; set; }
+    [Parameter] public EventCallback OnFlash { get; set; }
+    [Parameter] public EventCallback OnChangePassword { get; set; }
+    [Parameter] public EventCallback OnShowHelp { get; set; }
+    [Parameter] public EventCallback OnShowAbout { get; set; }
+    [Parameter] public EventCallback OnDonate { get; set; }
+
+    private Task Flash() => InvokeAsync(OnFlash);
+
+    [Parameter] public EventCallback OnLogout { get; set; }
+    private Task Logout() => InvokeAsync(OnLogout);
+
+    private Task CleanBuild() => InvokeAsync(OnCleanBuild);
+    private Task CleanLogs() => InvokeAsync(OnCleanLogs);
+    private Task CancelCompile() => InvokeAsync(OnCancelCompile);
+
+    private async Task ToggleMenu(string menu)
+    {
+        _openMenu = _openMenu == menu ? null : menu;
+
+        if (_openMenu != null)
+        {
+            _selfRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("quickEditer.registerMenuBarClose", _selfRef);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("quickEditer.unregisterMenuBarClose");
+        }
+    }
+
+    private Task ToggleFileMenu() => ToggleMenu("file");
+    private Task ToggleEditMenu() => ToggleMenu("edit");
+    private Task ToggleViewMenu() => ToggleMenu("view");
+    private Task ToggleBuildMenu() => ToggleMenu("build");
+    private Task ToggleHelpMenu() => ToggleMenu("help");
+    private Task ToggleSerial() => InvokeAsync(OnToggleSerial);
+
+    private async Task InvokeAsync(EventCallback cb)
+    {
+        _openMenu = null;
+        await JS.InvokeVoidAsync("quickEditer.unregisterMenuBarClose");
+        if (cb.HasDelegate) await cb.InvokeAsync();
+    }
+
+    private Task NewProject() => InvokeAsync(OnNewProject);
+    private Task OpenProject() => InvokeAsync(OnOpenProject);
+    private Task NewFile() => InvokeAsync(OnNewFile);
+    private Task Save() => InvokeAsync(OnSave);
+    private Task SaveAll() => InvokeAsync(OnSaveAll);
+    private Task Undo() => InvokeAsync(OnUndo);
+    private Task Redo() => InvokeAsync(OnRedo);
+    private Task Cut() => InvokeAsync(OnCut);
+    private Task Copy() => InvokeAsync(OnCopy);
+    private Task Paste() => InvokeAsync(OnPaste);
+    private Task SelectAll() => InvokeAsync(OnSelectAll);
+    private Task Find() => InvokeAsync(OnFind);
+    private Task Replace() => InvokeAsync(OnReplace);
+    private Task GlobalSearch() => InvokeAsync(OnGlobalSearch);
+    private Task ToggleOutput() => InvokeAsync(OnToggleOutput);
+    private Task Compile() => InvokeAsync(OnCompile);
+    private Task ExportProject() => InvokeAsync(OnExportProject);
+    private Task ProjectSettings() => InvokeAsync(OnProjectSettings);
+    private Task ShowShortcuts() => InvokeAsync(OnShowShortcuts);
+    private Task ChangePassword() => InvokeAsync(OnChangePassword);
+    private Task ShowHelp() => InvokeAsync(OnShowHelp);
+    private Task ShowAbout() => InvokeAsync(OnShowAbout);
+    private Task Donate() => InvokeAsync(OnDonate);
+    private async Task OpenRecent(string name)
+    {
+        _openMenu = null;
+        await JS.InvokeVoidAsync("quickEditer.unregisterMenuBarClose");
+        if (OnRecentProjectSelected.HasDelegate)
+            await OnRecentProjectSelected.InvokeAsync(name);
+    }
+
+    [JSInvokable]
+    public async Task CloseMenu()
+    {
+        if (_openMenu == null) return;
+        _openMenu = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    #region 示例
+
+    [Parameter] public List<string> ExampleSources { get; set; } = new();
+    [Parameter] public EventCallback<string> OnOpenExampleSource { get; set; }
+
+    private Task ToggleExamplesMenu() => ToggleMenu("examples");
+
+    private async Task OpenExampleSource(string source)
+    {
+        _openMenu = null;
+        await JS.InvokeVoidAsync("quickEditer.unregisterMenuBarClose");
+        if (OnOpenExampleSource.HasDelegate)
+            await OnOpenExampleSource.InvokeAsync(source);
+    }
+    #endregion
+
+    public void Dispose()
+    {
+        _selfRef?.Dispose();
+        _selfRef = null;
+    }
+}

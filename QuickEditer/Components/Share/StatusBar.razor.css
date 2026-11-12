@@ -1,0 +1,33 @@
+﻿.status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 28px;
+    padding: 0 12px;
+    background: var(--qe-bg-2);
+    border-top: 1px solid var(--qe-border);
+    font-size: 11px;
+    color: var(--qe-text-dim);
+    font-family: var(--qe-mono);
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.status-bar-left,
+.status-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.status-item {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+}
+
+    .status-item:hover {
+        color: var(--qe-text);
+    }

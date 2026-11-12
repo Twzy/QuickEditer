@@ -1,0 +1,383 @@
+﻿@* 文件路径：Components/Share/DialogHost.razor *@
+@using QuickEditer.Core
+@using QuickEditer.Models
+@using QuickEditer.Services
+@inject DialogService Dialog
+@implements IDisposable
+
+<!-- 新建项目 -->
+<ModalBase Show="ShowNewProject" Title="新建项目"
+           OnConfirm="OnCreateProjectConfirm" OnCancel="OnCloseNewProject">
+    <NewProjectDialog @ref="_newProjectDialog"
+                      DefaultFqbn="DefaultFqbn"
+                      OnSubmit="OnNewProjectSubmit" />
+</ModalBase>
+
+<!-- 打开历史项目 -->
+<ModalBase Show="ShowOpenProject" Title="打开历史项目"
+           OnConfirm="OnCloseOpenProject" OnCancel="OnCloseOpenProject">
+    <OpenProjectDialog @ref="_openProjectDialog"
+                       Projects="Projects"
+                       OnOpenSelected="OnOpenProjectSelected"
+                       OnDeleteConfirmed="OnOpenProjectDeleteConfirmed" />
+</ModalBase>
+
+<!-- 新建文件夹 -->
+<ModalBase Show="ShowCreateFolder" Title="新建文件夹"
+           OnConfirm="OnCreateFolderConfirmInternal" OnCancel="OnCloseCreateFolder">
+    <label class="form-label">文件夹名称</label>
+    <input class="form-control" @bind="_newFolderName" placeholder="例如：utils" />
+</ModalBase>
+
+<!-- 新建文件 -->
+<ModalBase Show="ShowCreateFile" Title="新建文件"
+           OnConfirm="OnCreateFileConfirmInternal" OnCancel="OnCloseCreateFile">
+    <label class="form-label">文件名</label>
+    <input class="form-control" @bind="_newFileName" placeholder="例如：helper.h" />
+</ModalBase>
+
+<!-- 重命名 -->
+<ModalBase Show="ShowRename" Title="重命名"
+           OnConfirm="OnRenameConfirmInternal" OnCancel="OnCloseRename">
+    <label class="form-label">新名称</label>
+    <input class="form-control" @bind="_renameName" />
+</ModalBase>
+
+<!-- 开发板管理 -->
+<ModalBase Show="ShowBoardManager" Title="开发板管理"
+           DialogClass="dialog-fixed"
+           OnConfirm="OnCloseBoardManager" OnCancel="OnCloseBoardManager">
+    <ChildContent>
+        <BoardManagerDialog OnBoardSelected="OnBoardSelected" />
+    </ChildContent>
+    <FooterLeftContent>
+        <button class="btn btn-outline-info" @onclick="OnOpenAdditionalUrls">
+            <i class="qe-ico qe-ico-link"></i> 附加索引 URL
+        </button>
+    </FooterLeftContent>
+</ModalBase>
+
+<!-- 附加索引 URL -->
+<ModalBase Show="ShowAdditionalUrls" Title="附加索引 URL"
+           OnConfirm="OnSaveAdditionalUrlsConfirm" OnCancel="OnCloseAdditionalUrls">
+    <AdditionalUrlsDialog @ref="_additionalUrlsDialog" OnSave="OnAdditionalUrlsSaved" />
+</ModalBase>
+
+<!-- 库管理 -->
+<ModalBase Show="ShowLibraryManager" Title="库管理"
+           DialogClass="dialog-fixed"
+           OnConfirm="OnCloseLibraryManager" OnCancel="OnCloseLibraryManager">
+    <LibraryManagerDialog />
+</ModalBase>
+
+<!-- 设置 -->
+<ModalBase Show="ShowSettings" Title="设置"
+           OnConfirm="OnSaveSettingsConfirmInternal" OnCancel="OnCloseSettings">
+    <div class="settings-group">
+        <div class="settings-group-title">通用</div>
+
+        @if (!string.IsNullOrEmpty(_editSettings.DefaultFqbn))
+        {
+            <label class="form-label">默认 FQBN</label>
+            <input class="form-control mb-2" @bind="_editSettings.DefaultFqbn" />
+        }
+    </div>
+
+    <div class="settings-group">
+        <div class="settings-group-title">编辑器</div>
+
+        <label class="form-label">编辑器字号</label>
+        <input type="number" class="form-control mb-2" min="10" max="28" @bind="_editSettings.EditorFontSize" />
+
+        <label class="form-label">应用主题</label>
+        <select class="form-control mb-2" @bind="_editSettings.AppTheme">
+            <option value="dark">深色</option>
+            <option value="light">浅色</option>
+        </select>
+
+        <div class="form-check mb-2">
+            <input type="checkbox" class="form-check-input" id="cfgMinimap" @bind="_editSettings.EditorMinimap" />
+            <label class="form-check-label" for="cfgMinimap">显示 minimap</label>
+        </div>
+
+        <div class="form-check mb-2">
+            <input type="checkbox" class="form-check-input" id="cfgWordWrap" @bind="_editSettings.EditorWordWrap" />
+            <label class="form-check-label" for="cfgWordWrap">自动换行</label>
+        </div>
+
+        <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="cfgStickyScroll" @bind="_editSettings.EditorStickyScroll" />
+            <label class="form-check-label" for="cfgStickyScroll">粘性滚动（显示方法名）</label>
+        </div>
+    </div>
+
+    <div class="settings-group">
+        <div class="settings-group-title">服务</div>
+
+        <label class="form-label">监听端口</label>
+        <input type="number" class="form-control mb-2" min="1" max="65535" @bind="_editSettings.HttpPort" />
+
+    </div>
+</ModalBase>
+
+<!-- 开发板配置 -->
+<ModalBase Show="ShowBoardConfig" Title="开发板配置"
+           DialogClass="dialog-fixed"
+           OnConfirm="OnBoardConfigConfirm" OnCancel="OnCloseBoardConfig">
+    <BoardConfigDialog @ref="_boardConfigDialog"
+                       Fqbn="@BoardConfigFqbn"
+                       BoardLabel="@BoardConfigLabel"
+                       CurrentValues="@BoardConfigValues"
+                       OnSave="OnBoardConfigSave" />
+</ModalBase>
+
+<!-- 项目设置 -->
+<ModalBase Show="ShowProjectSettings" Title="项目设置"
+           OnConfirm="OnProjectSettingsConfirm" OnCancel="OnCloseProjectSettings">
+    <ProjectSettingsDialog @ref="_projectSettingsDialog"
+                           Config="ProjectSettingsConfig"
+                           OnSave="OnProjectSettingsSave" />
+</ModalBase>
+
+<!-- 全局搜索 -->
+<ModalBase Show="ShowGlobalSearch" Title="全局搜索"
+           DialogClass="dialog-fixed"
+           OnConfirm="OnCloseGlobalSearch" OnCancel="OnCloseGlobalSearch">
+    <GlobalSearchDialog ProjectRoot="GlobalSearchRoot"
+                        OnResultSelected="OnGlobalSearchResultSelected" />
+</ModalBase>
+
+<!-- 快捷键 -->
+<ModalBase Show="ShowShortcuts" Title="快捷键"
+           OnConfirm="OnCloseShortcuts" OnCancel="OnCloseShortcuts">
+    <ShortcutsDialog />
+</ModalBase>
+
+<!-- 示例浏览 -->
+<ModalBase Show="ShowExamples" Title="示例"
+           DialogClass="dialog-fixed"
+           OnConfirm="OnCloseExamples" OnCancel="OnCloseExamples">
+    <ExamplePickerDialog InstallDir="@ExampleInstallDir"
+                         OnFileSelected="OnExampleFileSelected" />
+</ModalBase>
+
+<!-- 关闭未保存页签 -->
+<ModalBase Show="ShowConfirmCloseTab" Title="保存更改"
+           OnConfirm="OnConfirmCloseTabYes"
+           OnCancel="OnConfirmCloseTabCancel">
+    <ChildContent>
+        <ConfirmCloseTabDialog FileName="ConfirmCloseTabFileName" />
+    </ChildContent>
+    <FooterLeftContent>
+        <button class="qe-btn qe-btn-sm qe-btn-outline-danger" @onclick="OnConfirmCloseTabNo">
+            不保存
+        </button>
+    </FooterLeftContent>
+</ModalBase>
+
+<!-- 全局提示 -->
+<ModalBase Show="Dialog.ShowAlert" Title="@Dialog.AlertTitle"
+           OnConfirm="Dialog.CloseAlert" OnCancel="Dialog.CloseAlert">
+    <div class="global-dialog-message">@Dialog.AlertMessage</div>
+</ModalBase>
+
+<!-- 全局确认 -->
+<ModalBase Show="Dialog.ShowConfirm" Title="@Dialog.ConfirmTitle"
+           OnConfirm="() => Dialog.Confirm(true)" OnCancel="() => Dialog.Confirm(false)">
+    <div class="global-dialog-message">@Dialog.ConfirmMessage</div>
+</ModalBase>
+
+<!-- 在线烧录 -->
+<ModalBase Show="ShowFlash" Title="在线烧录"
+           DialogClass="dialog-fixed"
+           OnConfirm="OnCloseFlash" OnCancel="OnCloseFlash">
+    <FlashDialog ProjectName="@FlashProjectName" BoardFqbn="@FlashBoardFqbn" />
+</ModalBase>
+
+<!-- 修改密码 -->
+<ModalBase Show="ShowChangePassword" Title="修改密码"
+           OnConfirm="OnChangePasswordConfirm" OnCancel="OnCloseChangePassword">
+    <ChangePasswordDialog @ref="_changePasswordDialog" OnSaved="OnChangePasswordSaved" />
+</ModalBase>
+
+<ModalBase Show="ShowAbout" Title="关于"
+           OnConfirm="OnCloseAbout" OnCancel="OnCloseAbout">
+    <AboutDialog />
+</ModalBase>
+
+<!-- 捐赠 -->
+<ModalBase Show="ShowDonate" Title="捐赠"
+           OnConfirm="OnCloseDonate" OnCancel="OnCloseDonate">
+    <DonateDialog />
+</ModalBase>
+
+@code {
+    private NewProjectDialog? _newProjectDialog;
+    private OpenProjectDialog? _openProjectDialog;
+    private AdditionalUrlsDialog? _additionalUrlsDialog;
+    private BoardConfigDialog? _boardConfigDialog;
+    private ProjectSettingsDialog? _projectSettingsDialog;
+
+    private string _newFolderName = "";
+    private string _newFileName = "";
+    private string _renameName = "";
+
+    private AppSettings _editSettings = new();
+
+    [Parameter] public bool ShowNewProject { get; set; }
+    [Parameter] public bool ShowOpenProject { get; set; }
+    [Parameter] public bool ShowCreateFolder { get; set; }
+    [Parameter] public bool ShowCreateFile { get; set; }
+    [Parameter] public bool ShowRename { get; set; }
+    [Parameter] public bool ShowBoardManager { get; set; }
+    [Parameter] public bool ShowAdditionalUrls { get; set; }
+    [Parameter] public bool ShowLibraryManager { get; set; }
+    [Parameter] public bool ShowSettings { get; set; }
+    [Parameter] public bool ShowBoardConfig { get; set; }
+    [Parameter] public bool ShowProjectSettings { get; set; }
+    [Parameter] public bool ShowGlobalSearch { get; set; }
+    [Parameter] public bool ShowShortcuts { get; set; }
+    [Parameter] public bool ShowExamples { get; set; }
+    [Parameter] public bool ShowConfirmCloseTab { get; set; }
+    [Parameter] public string FlashProjectName { get; set; } = "";
+
+    [Parameter] public List<string> Projects { get; set; } = new();
+    [Parameter] public string DefaultFqbn { get; set; } = "";
+
+    [Parameter] public string BoardConfigFqbn { get; set; } = "";
+    [Parameter] public string BoardConfigLabel { get; set; } = "";
+    [Parameter] public Dictionary<string, string> BoardConfigValues { get; set; } = new();
+
+    [Parameter] public ProjectConfig? ProjectSettingsConfig { get; set; }
+    [Parameter] public string GlobalSearchRoot { get; set; } = "";
+    [Parameter] public string ExampleInstallDir { get; set; } = "";
+    [Parameter] public string ConfirmCloseTabFileName { get; set; } = "";
+
+    [Parameter] public EventCallback OnCloseNewProject { get; set; }
+    [Parameter] public EventCallback OnCloseOpenProject { get; set; }
+    [Parameter] public EventCallback OnCloseCreateFolder { get; set; }
+    [Parameter] public EventCallback OnCloseCreateFile { get; set; }
+    [Parameter] public EventCallback OnCloseRename { get; set; }
+    [Parameter] public EventCallback OnCloseBoardManager { get; set; }
+    [Parameter] public EventCallback OnCloseAdditionalUrls { get; set; }
+    [Parameter] public EventCallback OnCloseLibraryManager { get; set; }
+    [Parameter] public EventCallback OnCloseSettings { get; set; }
+    [Parameter] public EventCallback OnCloseBoardConfig { get; set; }
+    [Parameter] public EventCallback OnCloseProjectSettings { get; set; }
+    [Parameter] public EventCallback OnCloseGlobalSearch { get; set; }
+    [Parameter] public EventCallback OnCloseShortcuts { get; set; }
+    [Parameter] public EventCallback OnCloseExamples { get; set; }
+    [Parameter] public EventCallback OnCloseConfirmCloseTab { get; set; }
+
+    [Parameter] public EventCallback<(string Name, string Fqbn, string Description, string TemplateId)> OnNewProjectSubmit { get; set; }
+    [Parameter] public EventCallback<string> OnOpenProjectSelected { get; set; }
+    [Parameter] public EventCallback<string> OnOpenProjectDeleteConfirmed { get; set; }
+    [Parameter] public EventCallback<string> OnCreateFolderConfirm { get; set; }
+    [Parameter] public EventCallback<string> OnCreateFileConfirm { get; set; }
+    [Parameter] public EventCallback<string> OnRenameConfirm { get; set; }
+    [Parameter] public EventCallback<string> OnBoardSelected { get; set; }
+    [Parameter] public EventCallback<Dictionary<string, string>> OnBoardConfigSave { get; set; }
+    [Parameter] public EventCallback OnOpenAdditionalUrls { get; set; }
+    [Parameter] public EventCallback<string> OnAdditionalUrlsSaved { get; set; }
+    [Parameter] public EventCallback<ProjectConfig> OnProjectSettingsSave { get; set; }
+    [Parameter] public EventCallback<GlobalSearchDialog.SearchResult> OnGlobalSearchResultSelected { get; set; }
+    [Parameter] public EventCallback<string> OnExampleFileSelected { get; set; }
+    [Parameter] public EventCallback OnConfirmCloseTabYes { get; set; }
+    [Parameter] public EventCallback OnConfirmCloseTabNo { get; set; }
+    [Parameter] public EventCallback OnConfirmCloseTabCancel { get; set; }
+    [Parameter] public EventCallback<AppSettings> OnSaveSettingsConfirm { get; set; }
+
+
+    [Parameter] public bool ShowFlash { get; set; }
+    [Parameter] public string FlashBoardFqbn { get; set; } = "";
+    [Parameter] public EventCallback OnCloseFlash { get; set; }
+
+    private ChangePasswordDialog? _changePasswordDialog;
+
+    [Parameter] public bool ShowChangePassword { get; set; }
+    [Parameter] public EventCallback OnCloseChangePassword { get; set; }
+    [Parameter] public EventCallback OnChangePasswordSaved { get; set; }
+
+    [Parameter] public bool ShowAbout { get; set; }
+    [Parameter] public EventCallback OnCloseAbout { get; set; }
+
+    [Parameter] public bool ShowDonate { get; set; }
+    [Parameter] public EventCallback OnCloseDonate { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Dialog.OnChange += HandleDialogChange;
+    }
+
+    private void HandleDialogChange() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Dialog.OnChange -= HandleDialogChange;
+    }
+
+    public void ResetNewProjectForm() => _newProjectDialog?.Reset();
+    public void PrepareCreateFolder() => _newFolderName = "";
+    public void PrepareCreateFile() => _newFileName = "";
+    public void PrepareRename(string currentName) => _renameName = currentName;
+
+    public void PrepareSettings(AppSettings settings)
+    {
+        _editSettings = settings;
+    }
+    public void ResetAdditionalUrlsDialog() => _additionalUrlsDialog?.Reset();
+
+    private async Task OnCreateProjectConfirm()
+    {
+        if (_newProjectDialog != null)
+            await _newProjectDialog.SubmitAsync();
+    }
+
+    private async Task OnCreateFolderConfirmInternal()
+    {
+        if (OnCreateFolderConfirm.HasDelegate)
+            await OnCreateFolderConfirm.InvokeAsync(_newFolderName);
+    }
+
+    private async Task OnCreateFileConfirmInternal()
+    {
+        if (OnCreateFileConfirm.HasDelegate)
+            await OnCreateFileConfirm.InvokeAsync(_newFileName);
+    }
+
+    private async Task OnRenameConfirmInternal()
+    {
+        if (OnRenameConfirm.HasDelegate)
+            await OnRenameConfirm.InvokeAsync(_renameName);
+    }
+
+    private async Task OnSaveSettingsConfirmInternal()
+    {
+        if (OnSaveSettingsConfirm.HasDelegate)
+            await OnSaveSettingsConfirm.InvokeAsync(_editSettings);
+    }
+
+    private async Task OnSaveAdditionalUrlsConfirm()
+    {
+        if (_additionalUrlsDialog != null)
+            await _additionalUrlsDialog.SubmitAsync();
+    }
+
+    private async Task OnBoardConfigConfirm()
+    {
+        if (_boardConfigDialog != null)
+            await _boardConfigDialog.SubmitAsync();
+    }
+
+    private async Task OnProjectSettingsConfirm()
+    {
+        if (_projectSettingsDialog != null)
+            await _projectSettingsDialog.SubmitAsync();
+    }
+
+    private async Task OnChangePasswordConfirm()
+    {
+        if (_changePasswordDialog != null)
+            await _changePasswordDialog.SubmitAsync();
+    }
+}

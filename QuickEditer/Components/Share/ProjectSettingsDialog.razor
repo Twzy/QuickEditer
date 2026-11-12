@@ -1,0 +1,54 @@
+﻿@* 文件路径：Components/Share/ProjectSettingsDialog.razor *@
+@using QuickEditer.Core
+@using QuickEditer.Models
+
+<div class="project-settings-panel">
+    <label class="form-label">项目名称</label>
+    <input class="qe-input" @bind="_name" />
+
+    <label class="form-label">项目描述</label>
+<textarea class="qe-textarea" rows="3" @bind="_description"></textarea>
+
+    <label class="form-label">主草图文件</label>
+    <input class="qe-input" @bind="_mainSketchFile" disabled />
+    <div class="form-hint">主草图文件名与项目文件夹同名，不可修改</div>
+
+    <label class="form-label">库依赖（每行一个）</label>
+<textarea class="qe-textarea" rows="4" placeholder="例如：&#10;ArduinoJson&#10;Adafruit GFX Library" @bind="_librariesText"></textarea>
+</div>
+
+@code {
+    private string _name = "";
+    private string _description = "";
+    private string _mainSketchFile = "";
+    private string _librariesText = "";
+
+    [Parameter] public ProjectConfig? Config { get; set; }
+    [Parameter] public EventCallback<ProjectConfig> OnSave { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (Config == null) return;
+        _name = Config.Name;
+        _description = Config.Description;
+        _mainSketchFile = Config.MainSketchFile;
+        _librariesText = string.Join("\n", Config.Libraries);
+    }
+
+    public async Task SubmitAsync()
+    {
+        if (Config == null) return;
+
+        Config.Description = _description ?? "";
+        Config.Libraries = (_librariesText ?? "")
+            .Replace("\r\n", "\n")
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim())
+            .Where(s => !string.IsNullOrEmpty(s))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (OnSave.HasDelegate)
+            await OnSave.InvokeAsync(Config);
+    }
+}

@@ -1,0 +1,235 @@
+﻿@* 文件路径：Components/Share/CodeEditor.razor *@
+@using BlazorMonaco.Editor
+@using QuickEditer.Core
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="code-editor-host @(ReadOnly ? "readonly" : "")">
+    <StandaloneCodeEditor Id="@_editorId"
+                          ConstructionOptions="EditorOptions"
+                          @ref="_editor"
+                          OnDidChangeModelContent="OnContentChanged"
+                          OnDidChangeCursorPosition="HandleCursorPositionChanged" />
+</div>
+
+@code {
+    private StandaloneCodeEditor? _editor;
+    private readonly string _editorId = $"editor-{Guid.NewGuid():N}";
+    private string? _lastContent;
+    private string? _pendingContent;
+    private string? _language = "cpp";
+    private bool _hasPending;
+    private bool _suppressChange;
+    private bool _firstRendered;
+    private DotNetObjectReference<CodeEditor>? _selfRef;
+    private string? _appliedTheme;
+
+    [Parameter] public string? Content { get; set; }
+    [Parameter] public string? Language { get; set; }
+    [Parameter] public EventCallback<string> OnChanged { get; set; }
+    [Parameter] public EventCallback OnSaveRequested { get; set; }
+    [Parameter] public EventCallback<(int Line, int Column)> OnCursorChanged { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public EventCallback<int> OnScrollChanged { get; set; }
+    [Parameter] public string? Theme { get; set; }
+
+    private StandaloneEditorConstructionOptions EditorOptions(StandaloneCodeEditor editor)
+    {
+        return new StandaloneEditorConstructionOptions
+        {
+            Language = _language ?? "cpp",
+            Theme = GetMonacoTheme(),
+            Value = Content ?? "",
+            ReadOnly = ReadOnly,
+            DomReadOnly = ReadOnly,
+            AutomaticLayout = true,
+            Minimap = new EditorMinimapOptions { Enabled = Config.Cfg.EditorMinimap },
+            FontSize = Config.Cfg.EditorFontSize > 0 ? Config.Cfg.EditorFontSize : 14,
+            TabSize = 2,
+            WordWrap = Config.Cfg.EditorWordWrap ? "on" : "off",
+            StickyScroll = new EditorStickyScrollOptions { Enabled = Config.Cfg.EditorStickyScroll },
+            Find = new EditorFindOptions
+            {
+                AutoFindInSelection = false,
+                SeedSearchStringFromSelection = "selection"
+            }
+        };
+    }
+    private string GetMonacoTheme()
+    {
+        var theme = Theme ?? Config.Cfg.AppTheme;
+        return theme == "light" ? "vs" : "vs-dark";
+    }
+
+    protected override void OnParametersSet()
+    {
+        _language = Language ?? "cpp";
+
+        if (!_firstRendered)
+        {
+            _lastContent = Content;
+            return;
+        }
+
+        if (Content == _lastContent) return;
+
+        _pendingContent = Content;
+        _hasPending = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _firstRendered = true;
+            _selfRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("quickEditer.bindEditorShortcuts", _selfRef);
+            await JS.InvokeVoidAsync("quickEditer.registerArduinoCompletion");
+            await JS.InvokeVoidAsync("quickEditer.bindEditorScroll", _editorId, _selfRef);
+            _appliedTheme = GetMonacoTheme();
+            return;
+        }
+
+        if (_editor != null)
+        {
+            try { await JS.InvokeVoidAsync("quickEditer.setEditorReadOnly", _editorId, ReadOnly); } catch { }
+        }
+
+        if (_editor == null || !_hasPending) return;
+
+        if (_editor != null && _appliedTheme != GetMonacoTheme())
+        {
+            _appliedTheme = GetMonacoTheme();
+            try { await JS.InvokeVoidAsync("quickEditer.setMonacoTheme", _appliedTheme); } catch { }
+        }
+
+
+        _hasPending = false;
+        var target = _pendingContent ?? "";
+        _pendingContent = null;
+
+        if (target == _lastContent) return;
+
+        _suppressChange = true;
+        try
+        {
+            var scrollTop = await _editor.GetScrollTop();
+            await _editor.SetValue(target);
+            await _editor.SetScrollTop((int)scrollTop);
+            await _editor.Layout();
+            _lastContent = target;
+        }
+        catch (JSException ex)
+        {
+            Console.WriteLine($"[CodeEditor] SetValue failed: {ex.Message}");
+        }
+        finally
+        {
+            _suppressChange = false;
+        }
+    }
+
+
+    public async Task FormatAsync()
+    {
+        if (_editor == null) return;
+        await _editor.Trigger("keyboard", "editor.action.formatDocument", null);
+    }
+
+    private async Task OnContentChanged(ModelContentChangedEvent e)
+    {
+        if (_editor == null || _suppressChange || ReadOnly) return;
+
+        var v = await _editor.GetValue();
+        _lastContent = v;
+
+        if (OnChanged.HasDelegate)
+            await OnChanged.InvokeAsync(v);
+    }
+
+    private async Task HandleCursorPositionChanged(CursorPositionChangedEvent e)
+    {
+        if (OnCursorChanged.HasDelegate)
+            await OnCursorChanged.InvokeAsync((e.Position.LineNumber, e.Position.Column));
+    }
+
+    [JSInvokable]
+    public async Task OnSaveShortcut()
+    {
+        if (OnSaveRequested.HasDelegate)
+            await OnSaveRequested.InvokeAsync();
+    }
+    [JSInvokable]
+    public async Task OnEditorScroll(int scrollTop)
+    {
+        if (OnScrollChanged.HasDelegate)
+            await OnScrollChanged.InvokeAsync(scrollTop);
+    }
+
+    public async Task SetScrollAsync(int scrollTop)
+    {
+        if (_editor == null) return;
+        try { await _editor.SetScrollTop(scrollTop); }
+        catch { }
+    }
+
+    public async Task UndoAsync()
+    {
+        if (_editor != null) await _editor.Trigger("keyboard", "undo", null);
+    }
+
+    public async Task RedoAsync()
+    {
+        if (_editor != null) await _editor.Trigger("keyboard", "redo", null);
+    }
+
+    public async Task CopyAsync()
+    {
+        if (_editor != null) await _editor.Trigger("keyboard", "editor.action.clipboardCopyAction", null);
+    }
+
+    public async Task CutAsync()
+    {
+        if (_editor != null) await _editor.Trigger("keyboard", "editor.action.clipboardCutAction", null);
+    }
+
+    public async Task PasteAsync()
+    {
+        if (_editor != null) await _editor.Trigger("keyboard", "editor.action.clipboardPasteAction", null);
+    }
+
+    public async Task SelectAllAsync()
+    {
+        if (_editor != null) await _editor.Trigger("keyboard", "editor.action.selectAll", null);
+    }
+
+    public async Task FindAsync()
+    {
+        if (_editor != null) await _editor.Trigger("keyboard", "actions.find", null);
+    }
+
+    public async Task ReplaceAsync()
+    {
+        if (_editor != null) await _editor.Trigger("keyboard", "editor.action.startFindReplaceAction", null);
+    }
+
+    public async Task ToggleCommentAsync()
+    {
+        if (_editor == null) return;
+        await _editor.Trigger("keyboard", "editor.action.commentLine", null);
+    }
+
+    public async Task RefreshThemeAsync()
+    {
+        var theme = GetMonacoTheme();
+        if (_appliedTheme == theme) return;
+        _appliedTheme = theme;
+        try { await JS.InvokeVoidAsync("quickEditer.setMonacoTheme", theme); } catch { }
+    }
+
+    public void Dispose()
+    {
+        _selfRef?.Dispose();
+        _selfRef = null;
+    }
+}

@@ -1,0 +1,118 @@
+﻿@* 文件路径：Components/Share/ExamplePickerDialog.razor *@
+@using QuickEditer.Models
+@using QuickEditer.Services
+@inject ExampleService ExampleSvc
+<div class="example-picker-root">
+    <div class="example-picker">
+        <div class="example-picker-list">
+            <div class="example-picker-search">
+                <input class="qe-input qe-input-sm" placeholder="过滤示例" @bind="_filter" @bind:event="oninput" />
+            </div>
+            <div class="example-picker-items">
+                @if (FilteredExamples.Count == 0)
+                {
+                    <div class="example-picker-empty">
+                        @(string.IsNullOrWhiteSpace(_filter) ? "该库/核心没有示例" : "没有匹配的示例")
+                    </div>
+                }
+                else
+                {
+                    @foreach (var ex in FilteredExamples)
+                    {
+                        <div class="example-picker-item @(ex == _selected ? "active" : "")"
+                             @onclick="() => SelectExample(ex)">
+                            <i class="qe-ico qe-ico-folder"></i>
+                            <span>@ex.Name</span>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="example-picker-tree">
+            @if (_tree != null)
+            {
+                <ProjectTreeNodeView Node="@_tree"
+                                     Depth="0"
+                                     SelectedPath="@_selectedFilePath"
+                                     ReadOnlyMode="true"
+                                     OnSelect="OnTreeSelect" />
+            }
+            else
+            {
+                <div class="example-picker-empty">选择左侧示例查看文件</div>
+            }
+        </div>
+    </div>
+    <div class="example-picker-actions">
+        <button class="qe-btn qe-btn-primary"
+                @onclick="OpenSelected"
+                disabled="@(string.IsNullOrEmpty(_selectedFilePath))">
+            打开
+        </button>
+    </div>
+</div>
+@code {
+    private List<ExampleInfo> _examples = new();
+    private ExampleInfo? _selected;
+    private ProjectTreeNode? _tree;
+    private string? _selectedFilePath;
+    private string _filter = "";
+
+    [Parameter] public string InstallDir { get; set; } = "";
+    [Parameter] public EventCallback<string> OnFileSelected { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        _examples = ExampleSvc.ListExamples(InstallDir);
+
+        _selected = null;
+        _tree = null;
+        _selectedFilePath = null;
+
+        if (_examples.Count == 0) return;
+
+        var remembered = Config.Cfg.LastExampleName;
+        _selected = !string.IsNullOrEmpty(remembered)
+            ? _examples.FirstOrDefault(e => string.Equals(e.Name, remembered, StringComparison.OrdinalIgnoreCase))
+            : null;
+
+        _selected ??= _examples.FirstOrDefault();
+
+        if (_selected != null)
+        {
+            _tree = ExampleSvc.BuildExampleTree(_selected);
+            _selectedFilePath = _selected.MainInoPath;
+        }
+    }
+
+    private List<ExampleInfo> FilteredExamples =>
+        string.IsNullOrWhiteSpace(_filter)
+            ? _examples
+            : _examples.Where(e => e.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private void SelectExample(ExampleInfo ex)
+    {
+        _selected = ex;
+        _tree = ExampleSvc.BuildExampleTree(ex);
+        _selectedFilePath = ex.MainInoPath;
+
+        Config.Cfg.LastExampleName = ex.Name;
+        Config.ConfigAll();
+    }
+
+    private Task OnTreeSelect(ProjectTreeNode node)
+    {
+        if (node.NodeType != ProjectNodeType.File) return Task.CompletedTask;
+        _selectedFilePath = node.FullPath;
+        return Task.CompletedTask;
+    }
+
+
+    private async Task OpenSelected()
+    {
+        if (string.IsNullOrEmpty(_selectedFilePath)) return;
+        if (OnFileSelected.HasDelegate)
+            await OnFileSelected.InvokeAsync(_selectedFilePath);
+    }
+}
